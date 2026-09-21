@@ -15,11 +15,6 @@ use Illuminate\Support\Facades\Storage;
 
 final class DatabaseSeeder extends Seeder
 {
-    private const array TAGS = [
-        'Laravel', 'Vue.js', 'PHP', 'DevOps', 'Security',
-        'Testing', 'Architecture', 'Performance', 'Accessibility', 'Career',
-    ];
-
     public function run(): void
     {
         $this->call(RolesAndPermissionsSeeder::class);
@@ -31,22 +26,31 @@ final class DatabaseSeeder extends Seeder
         $speakers = User::factory()->count(3)->speaker()->create()->prepend($speaker);
         $reviewers = User::factory()->count(2)->reviewer()->create()->prepend($reviewer);
 
-        $tags = collect(self::TAGS)->map(fn (string $name): Tag => Tag::query()->firstOrCreate(
-            ['slug' => Tag::slugFor($name)],
-            ['name' => $name],
-        ));
+        /** @var list<array{0: string, 1: string, 2: list<string>}> $talks */
+        $talks = require __DIR__.'/data/talks.php';
+        /** @var list<string> $comments */
+        $comments = require __DIR__.'/data/review-comments.php';
+
+        $tags = collect($talks)->pluck(2)->flatten()->unique()
+            ->mapWithKeys(fn (string $name): array => [$name => Tag::factory()->named($name)->create()]);
 
         $statuses = ProposalStatus::cases();
 
-        foreach (range(1, 25) as $i) {
+        foreach ($talks as $i => [$title, $abstract, $tagNames]) {
             $proposal = Proposal::factory()
-                ->for($speakers->random(), 'author')
+                ->for($i % 4 === 0 ? $speaker : $speakers->random(), 'author')
                 ->status($statuses[$i % count($statuses)])
-                ->withTags($tags->random(random_int(1, 3)))
-                ->create(['created_at' => now()->subHours($i * 5)]);
+                ->withTags($tags->only($tagNames))
+                ->create([
+                    'title' => $title,
+                    'description' => $abstract,
+                    'created_at' => now()->subHours(($i + 1) * 7),
+                ]);
 
             foreach ($reviewers->random(random_int(0, $reviewers->count())) as $author) {
-                Review::factory()->for($proposal)->for($author, 'author')->create();
+                Review::factory()->for($proposal)->for($author, 'author')->create([
+                    'comment' => $comments[array_rand($comments)],
+                ]);
             }
         }
 

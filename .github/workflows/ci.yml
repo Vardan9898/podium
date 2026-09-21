@@ -1,0 +1,78 @@
+name: CI
+
+on:
+    push:
+        branches: [main]
+    pull_request:
+
+concurrency:
+    group: ci-${{ github.ref }}
+    cancel-in-progress: true
+
+jobs:
+    backend:
+        name: Backend (Pint · Larastan · Pest)
+        runs-on: ubuntu-latest
+
+        services:
+            postgres:
+                image: postgres:17-alpine
+                env:
+                    POSTGRES_DB: testing
+                    POSTGRES_USER: sail
+                    POSTGRES_PASSWORD: password
+                ports: ['5432:5432']
+                options: >-
+                    --health-cmd "pg_isready -U sail -d testing"
+                    --health-interval 5s --health-timeout 5s --health-retries 10
+
+        env:
+            DB_HOST: 127.0.0.1
+
+        steps:
+            - uses: actions/checkout@v4
+
+            - uses: shivammathur/setup-php@v2
+              with:
+                  php-version: '8.4'
+                  extensions: pdo_pgsql, fileinfo, intl
+                  coverage: none
+
+            - name: Cache Composer packages
+              uses: actions/cache@v4
+              with:
+                  path: vendor
+                  key: composer-${{ hashFiles('composer.lock') }}
+
+            - run: composer install --no-interaction --prefer-dist --no-progress
+
+            - name: Prepare environment
+              run: |
+                  cp .env.example .env
+                  php artisan key:generate
+
+            - name: Pint
+              run: vendor/bin/pint --test
+
+            - name: Larastan
+              run: vendor/bin/phpstan analyse --no-progress --memory-limit=1G
+
+            - name: Pest
+              run: vendor/bin/pest --ci
+
+    frontend:
+        name: Frontend (type-check · Vitest · build)
+        runs-on: ubuntu-latest
+
+        steps:
+            - uses: actions/checkout@v4
+
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: 22
+                  cache: npm
+
+            - run: npm ci
+            - run: npm run type-check
+            - run: npm test
+            - run: npm run build

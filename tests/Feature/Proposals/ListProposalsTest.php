@@ -16,7 +16,8 @@ it('shows speakers only their own proposals', function (): void {
     $this->actingAs($speaker)->getJson('/api/proposals')
         ->assertOk()
         ->assertJsonCount(1, 'data')
-        ->assertJsonPath('data.0.id', $own->id);
+        ->assertJsonPath('data.0.id', $own->id)
+        ->assertJsonMissingPath('data.0.average_rating');
 });
 
 it('shows reviewers and admins every proposal', function (Role $role): void {
@@ -43,15 +44,17 @@ it('searches by title, case-insensitively and treating wildcards literally', fun
         ->assertJsonPath('data.0.title', '100% uptime');
 });
 
-it('filters by any of several tags', function (): void {
-    [$php, $vue, $go] = Tag::factory()->count(3)->create()->all();
+it('filters by any of several tags, matched by name case-insensitively', function (): void {
+    $php = Tag::factory()->named('PHP')->create();
+    $vue = Tag::factory()->named('Vue.js')->create();
+    $go = Tag::factory()->named('Go')->create();
     $a = Proposal::factory()->withTags([$php])->create();
     $b = Proposal::factory()->withTags([$vue, $php])->create();
     Proposal::factory()->withTags([$go])->create();
     Proposal::factory()->create();
 
     $response = $this->actingAs(userWithRole(Role::Reviewer))
-        ->getJson('/api/proposals?'.http_build_query(['tags' => [$php->slug, $vue->slug]]))
+        ->getJson('/api/proposals?'.http_build_query(['tags' => ['php', 'VUE.JS']]))
         ->assertOk();
 
     expect($response->json('data.*.id'))->toEqualCanonicalizing([$a->id, $b->id]);

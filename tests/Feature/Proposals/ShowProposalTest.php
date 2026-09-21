@@ -17,18 +17,20 @@ it('lets speakers open their own proposal but not anyone else\'s', function (): 
     $this->actingAs($speaker)->getJson("/api/proposals/{$other->id}")->assertForbidden();
 });
 
-it('includes reviews only for users allowed to read them', function (Role $role, bool $seesReviews): void {
+it('includes reviews and scores only for users allowed to read them', function (Role $role, bool $seesReviews): void {
     $proposal = Proposal::factory()->create();
     Review::factory()->count(2)->for($proposal)->create();
     $viewer = $role === Role::Speaker ? User::query()->findOrFail($proposal->user_id) : userWithRole($role);
 
-    $response = $this->actingAs($viewer)->getJson("/api/proposals/{$proposal->id}")
-        ->assertOk()
-        ->assertJsonPath('data.reviews_count', 2);
+    $response = $this->actingAs($viewer)->getJson("/api/proposals/{$proposal->id}")->assertOk();
 
     $seesReviews
-        ? $response->assertJsonCount(2, 'data.reviews')->assertJsonStructure(['data' => ['reviews' => [['rating', 'comment', 'reviewer' => ['id', 'name']]]]])
-        : $response->assertJsonMissingPath('data.reviews');
+        ? $response->assertJsonCount(2, 'data.reviews')
+            ->assertJsonPath('data.reviews_count', 2)
+            ->assertJsonStructure(['data' => ['average_rating', 'reviews' => [['rating', 'comment', 'reviewer' => ['id', 'name']]]]])
+        : $response->assertJsonMissingPath('data.reviews')
+            ->assertJsonMissingPath('data.reviews_count')
+            ->assertJsonMissingPath('data.average_rating');
 })->with([
     'speaker (author)' => [Role::Speaker, false],
     'reviewer' => [Role::Reviewer, true],

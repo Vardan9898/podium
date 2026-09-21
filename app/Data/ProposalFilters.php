@@ -9,7 +9,7 @@ use App\Enums\ProposalStatus;
 final readonly class ProposalFilters
 {
     /**
-     * @param  list<string>  $tags  Tag slugs; a proposal matches if it has any of them.
+     * @param  list<string>  $tags  Tag slugs (normalised from names); a proposal matches if it has any of them.
      */
     public function __construct(
         public ?string $search,

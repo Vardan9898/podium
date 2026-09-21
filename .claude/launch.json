@@ -1,0 +1,6 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    { "name": "app", "runtimeExecutable": "php", "runtimeArgs": ["-d", "upload_max_filesize=8M", "-d", "post_max_size=10M", "artisan", "serve", "--port=8000"], "port": 8000 }
+  ]
+}

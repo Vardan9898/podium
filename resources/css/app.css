@@ -1,11 +1,72 @@
 @import 'tailwindcss';
 
-@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
-@source '../../storage/framework/views/*.php';
 @source '../**/*.blade.php';
-@source '../**/*.js';
+@source '../js/**/*.{vue,ts}';
 
+/*
+ * "Conference programme" palette: warm paper, ink, and one signal colour.
+ */
 @theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-        'Segoe UI Symbol', 'Noto Color Emoji';
+    --font-sans: 'Geist', ui-sans-serif, system-ui, sans-serif;
+    --font-display: 'Fraunces', ui-serif, Georgia, serif;
+    --font-mono: 'Geist Mono', ui-monospace, SFMono-Regular, monospace;
+
+    --color-paper: #f5f1e8;
+    --color-paper-deep: #ebe5d7;
+    --color-card: #fffdf8;
+    --color-ink: #1b1a17;
+    --color-ink-soft: #57534a;
+    --color-ink-faint: #8a8475;
+    --color-rule: #d9d2c1;
+    --color-signal: #d9432b;
+    --color-signal-deep: #b3331e;
+    --color-approved: #2f6b4f;
+    --color-rejected: #9c2f2f;
+    --color-pending: #a0701a;
+
+    --animate-rise: rise 420ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+
+    @keyframes rise {
+        from {
+            opacity: 0;
+            transform: translateY(8px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+}
+
+@layer base {
+    html {
+        font-feature-settings: 'ss01', 'cv11';
+    }
+
+    body {
+        background-color: var(--color-paper);
+        background-image:
+            radial-gradient(circle at 1px 1px, rgb(27 26 23 / 0.05) 1px, transparent 0);
+        background-size: 22px 22px;
+        color: var(--color-ink);
+    }
+
+    :focus-visible {
+        outline: 2px solid var(--color-signal);
+        outline-offset: 2px;
+    }
+
+    ::selection {
+        background: var(--color-signal);
+        color: var(--color-card);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 1ms !important;
+        transition-duration: 1ms !important;
+    }
 }
