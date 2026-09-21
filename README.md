@@ -31,7 +31,7 @@ Speakers submit talk proposals, reviewers rate them, admins decide — and every
 
 ## Quick start (Sail)
 
-Requires Docker. Everything else (PHP 8.4, PostgreSQL, Redis, Reverb, a queue worker) runs in containers.
+Requires Docker. Everything else (PHP 8.4, PostgreSQL, Redis, Reverb, a queue worker) runs in containers. Verified from a fresh clone with Docker Desktop 4.91 on macOS (Apple Silicon): all services start, seeding, the SPA build, live notifications and the full test suite work inside Sail.
 
 ```bash
 cp .env.example .env
@@ -50,6 +50,16 @@ docker run --rm -u "$(id -u):$(id -g)" -v "$(pwd):/var/www/html" -w /var/www/htm
 Open **http://localhost** · API docs at **http://localhost/docs/api**.
 
 `sail up` starts the queue worker and Reverb as their own services, so live notifications work immediately. For frontend hot reload use `./vendor/bin/sail npm run dev` instead of `build`.
+
+> **Port already in use?** If something on your machine already listens on 80, 5432, 6379 or 8080 (a local nginx/Valet, Postgres, Redis…), add overrides to `.env` before `sail up`, e.g.:
+> ```dotenv
+> APP_PORT=8088
+> APP_URL=http://localhost:8088
+> FORWARD_DB_PORT=54320
+> FORWARD_REDIS_PORT=63790
+> FORWARD_REVERB_PORT=8081   # then also set VITE_REVERB_PORT=8081 and rebuild
+> ```
+> Sanctum trusts `APP_URL` automatically, so sign-in keeps working on the new port.
 
 > **Seeing real-time updates:** sign in as `speaker@example.com` in one browser and `reviewer@example.com` in a private window. Submit a proposal as the speaker — the reviewer gets a toast, the bell count goes up and their list refreshes, with no page reload.
 
