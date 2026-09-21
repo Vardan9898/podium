@@ -1,0 +1,34 @@
+<?php
+
+declare(strict_types=1);
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('tags', function (Blueprint $table): void {
+            $table->id();
+            $table->string('name', 30);
+            $table->string('slug', 40)->unique();
+            $table->timestamps();
+        });
+
+        Schema::create('proposal_tag', function (Blueprint $table): void {
+            $table->foreignId('proposal_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('tag_id')->constrained()->cascadeOnDelete();
+
+            $table->primary(['proposal_id', 'tag_id']);
+            $table->index('tag_id');
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('proposal_tag');
+        Schema::dropIfExists('tags');
+    }
+};
