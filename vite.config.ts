@@ -6,10 +6,15 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
     plugins: [
-        laravel({
-            input: ['resources/css/app.css', 'resources/js/app.ts'],
-            refresh: true,
-        }),
+        // Asset pipeline only; Vitest doesn't need it (and it refuses to boot when CI=true).
+        ...(process.env.VITEST
+            ? []
+            : [
+                  laravel({
+                      input: ['resources/css/app.css', 'resources/js/app.ts'],
+                      refresh: true,
+                  }),
+              ]),
         vue({
             template: {
                 transformAssetUrls: { base: null, includeAbsolute: false },
