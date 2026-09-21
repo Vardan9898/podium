@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Http\Controllers\Auth\CurrentUserController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\SessionController;
+use App\Http\Controllers\ClientConfigController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\Proposals\ProposalAttachmentController;
 use App\Http\Controllers\Proposals\ProposalController;
@@ -13,6 +14,8 @@ use App\Http\Controllers\Proposals\ProposalStatusController;
 use App\Http\Controllers\TagController;
 use App\Models\Proposal;
 use Illuminate\Support\Facades\Route;
+
+Route::get('config', ClientConfigController::class)->name('config');
 
 Route::middleware('guest')->group(function (): void {
     Route::post('register', RegisterController::class)->middleware('throttle:register')->name('register');

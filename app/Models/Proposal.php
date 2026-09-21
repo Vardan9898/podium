@@ -128,16 +128,16 @@ final class Proposal extends Model
 
     /**
      * @param  Builder<self>  $query
-     * @param  list<string>  $slugs
+     * @param  list<string>  $keys  Normalised tag keys (see Tag::keyFor()).
      */
     #[Scope]
-    protected function withAnyTags(Builder $query, array $slugs): void
+    protected function withAnyTags(Builder $query, array $keys): void
     {
-        if ($slugs === []) {
+        if ($keys === []) {
             return;
         }
 
-        $query->whereHas('tags', fn (Builder $tags) => $tags->whereIn('slug', $slugs));
+        $query->whereHas('tags', fn (Builder $tags) => $tags->whereIn('normalized_name', $keys));
     }
 
     /** @param  Builder<self>  $query */

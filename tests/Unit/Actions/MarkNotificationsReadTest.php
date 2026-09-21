@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Actions\Notifications\MarkNotificationsRead;
+use App\Data\NotificationSelection;
 use App\Data\ProposalActivity;
 use App\Enums\ProposalActivityType;
 use App\Enums\Role;
@@ -19,9 +20,9 @@ it('marks only the given ids, or all when ids is null', function (): void {
     }
     $action = app(MarkNotificationsRead::class);
 
-    $action->handle($user, [$user->notifications()->firstOrFail()->id]);
+    $action->handle($user, new NotificationSelection([$user->notifications()->firstOrFail()->id]));
     expect($user->unreadNotifications()->count())->toBe(2);
 
-    $action->handle($user, null);
+    $action->handle($user, new NotificationSelection(null));
     expect($user->unreadNotifications()->count())->toBe(0);
 });

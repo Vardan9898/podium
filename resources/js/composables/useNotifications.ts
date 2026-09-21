@@ -1,6 +1,7 @@
 import { echo } from '@/lib/echo';
 import { useAuthStore } from '@/stores/auth';
 import { useNotificationStore, type BroadcastNotification } from '@/stores/notifications';
+import { useToastStore } from '@/stores/toasts';
 import { watch } from 'vue';
 
 const channelFor = (userId: number): string => `App.Models.User.${userId}`;
@@ -13,6 +14,7 @@ const channelFor = (userId: number): string => `App.Models.User.${userId}`;
 export function useNotifications(): void {
     const auth = useAuthStore();
     const store = useNotificationStore();
+    const toasts = useToastStore();
 
     watch(
         () => auth.user?.id,
@@ -20,6 +22,7 @@ export function useNotifications(): void {
             if (previousId !== undefined) {
                 echo().leave(channelFor(previousId));
                 store.reset();
+                toasts.clear(); // don't leave the previous user's proposal titles on a shared screen
             }
 
             if (userId !== undefined) {

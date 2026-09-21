@@ -16,7 +16,11 @@ export const useAuthStore = defineStore('auth', () => {
         return user.value?.permissions.includes(permission) ?? false;
     }
 
-    /** Resolves the session once per page load; later calls reuse the same promise. */
+    /**
+     * Resolves the session once per page load; later calls reuse the same promise. A 401 means
+     * "guest". Any other failure also continues as guest but is retried on the next navigation,
+     * so a backend hiccup during boot can't leave the app unable to route.
+     */
     function ensureLoaded(): Promise<void> {
         loading ??= authApi
             .fetchCurrentUser()
@@ -25,7 +29,7 @@ export const useAuthStore = defineStore('auth', () => {
             })
             .catch((error: unknown) => {
                 if (statusOf(error) !== 401) {
-                    throw error;
+                    loading = null;
                 }
             });
 

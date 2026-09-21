@@ -10,9 +10,10 @@ use App\Enums\ProposalActivityType;
 use App\Events\ProposalSubmitted;
 use App\Models\User;
 use App\Notifications\ProposalActivityNotification;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Facades\Notification;
 
-final class NotifyAboutSubmittedProposal
+final class NotifyAboutSubmittedProposal implements ShouldQueue
 {
     public function handle(ProposalSubmitted $event): void
     {

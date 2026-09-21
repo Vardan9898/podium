@@ -45,6 +45,11 @@ final class User extends Authenticatable
         return $this->hasMany(Review::class);
     }
 
+    public function unreadNotificationCount(): int
+    {
+        return $this->unreadNotifications()->count();
+    }
+
     public function role(): ?Role
     {
         $name = $this->getRoleNames()->first();

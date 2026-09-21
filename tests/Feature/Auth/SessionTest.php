@@ -16,6 +16,12 @@ it('logs in with valid credentials', function (): void {
     $this->assertAuthenticatedAs($user, 'web');
 });
 
+it('treats the email case-insensitively', function (): void {
+    $user = userWithRole(Role::Reviewer);
+
+    $this->postJson('/api/login', ['email' => '  '.mb_strtoupper($user->email), 'password' => 'password'])->assertOk();
+});
+
 it('rejects invalid credentials without revealing which field was wrong', function (): void {
     $user = userWithRole(Role::Speaker);
 

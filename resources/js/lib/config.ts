@@ -1,19 +1,14 @@
 /**
- * Client-side mirrors of server config, used for UX only. The API is the source of truth
- * and re-validates everything (see config/proposals.php).
+ * Field length limits mirrored from the FormRequests, used for counters and `maxlength` only.
+ * Anything configurable on the server (rating range, upload size, tag count) comes from /api/config.
  */
-export const RATING = { min: 1, max: 10 } as const;
-
-export const ATTACHMENT = {
-    maxBytes: 4 * 1024 * 1024,
-    mimeType: 'application/pdf',
-} as const;
-
 export const LIMITS = {
+    searchMax: 255,
     titleMax: 255,
     descriptionMax: 5000,
     commentMax: 2000,
-    tagsMax: 10,
     tagMin: 2,
     tagMax: 30,
 } as const;
+
+export const PDF_MIME_TYPE = 'application/pdf';

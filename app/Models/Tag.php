@@ -21,7 +21,7 @@ final class Tag extends Model
     /** @var list<string> */
     protected $fillable = [
         'name',
-        'slug',
+        'normalized_name',
     ];
 
     /**
@@ -33,11 +33,12 @@ final class Tag extends Model
     }
 
     /**
-     * Case-insensitive identity used for de-duplication.
+     * Identity used for de-duplication: normalised and case-folded, nothing else dropped,
+     * so "C", "C#" and "C++" stay distinct while "Laravel" and " LARAVEL " collide.
      */
-    public static function slugFor(string $name): string
+    public static function keyFor(string $name): string
     {
-        return Str::slug(self::normalizeName($name));
+        return mb_strtolower(self::normalizeName($name));
     }
 
     /** @return BelongsToMany<Proposal, $this> */

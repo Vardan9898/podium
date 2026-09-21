@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import SelectField from '@/components/ui/SelectField.vue';
 import TagInput from '@/components/TagInput.vue';
+import { LIMITS } from '@/lib/config';
 import { STATUS_OPTIONS } from '@/lib/format';
+import { useConfigStore } from '@/stores/config';
 import type { ProposalStatus } from '@/types/api';
 import { onBeforeUnmount, ref, useId, watch } from 'vue';
 
@@ -16,6 +18,7 @@ const SEARCH_DEBOUNCE_MS = 300;
 const filters = defineModel<Filters>({ required: true });
 
 const searchId = useId();
+const maxTags = useConfigStore().settings.tags_max_per_proposal;
 const search = ref(filters.value.search);
 let timer: ReturnType<typeof setTimeout> | undefined;
 
@@ -53,6 +56,7 @@ const hasFilters = (): boolean => filters.value.search !== '' || filters.value.t
                     :id="searchId"
                     v-model="search"
                     type="search"
+                    :maxlength="LIMITS.searchMax"
                     placeholder="e.g. queues"
                     class="w-full rounded-lg border border-rule bg-card py-2.5 pr-3 pl-9 text-[15px] placeholder:text-ink-faint focus:border-ink focus:ring-2 focus:ring-signal/25 focus:outline-none"
                 />
@@ -62,6 +66,7 @@ const hasFilters = (): boolean => filters.value.search !== '' || filters.value.t
             :model-value="filters.tags"
             label="Tags (any of)"
             :allow-create="false"
+            :max="maxTags"
             placeholder="Filter by tag…"
             @update:model-value="(tags) => (filters = { ...filters, tags })"
         />

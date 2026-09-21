@@ -22,9 +22,9 @@ final readonly class ProposalActivity
         public string $actorName,
     ) {}
 
-    public static function for(ProposalActivityType $type, Proposal $proposal, User $actor, string $message): self
+    public static function for(ProposalActivityType $type, Proposal $proposal, User|string $actor, string $message): self
     {
-        return new self($type, $proposal->id, $proposal->title, $message, $actor->name);
+        return new self($type, $proposal->id, $proposal->title, $message, is_string($actor) ? $actor : $actor->name);
     }
 
     /**

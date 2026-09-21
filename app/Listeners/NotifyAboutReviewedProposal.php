@@ -10,27 +10,36 @@ use App\Enums\ProposalActivityType;
 use App\Events\ProposalReviewed;
 use App\Models\User;
 use App\Notifications\ProposalActivityNotification;
-use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Facades\Notification;
 
-final class NotifyAboutReviewedProposal
+final class NotifyAboutReviewedProposal implements ShouldQueue
 {
     public function handle(ProposalReviewed $event): void
     {
-        $recipients = User::query()
-            ->where(fn (Builder $query) => $query
-                ->whereKey($event->proposal->user_id)
-                ->orWhere(fn (Builder $admins) => $admins->permission(Permission::ChangeProposalStatus)))
-            ->whereKeyNot($event->actor->id)
+        $proposal = $event->proposal;
+        $actor = $event->actor;
+        $verb = $event->isNewReview ? 'reviewed' : 'updated their review of';
+
+        $admins = User::permission(Permission::ChangeProposalStatus)
+            ->whereKeyNot([$actor->id, $proposal->user_id])
             ->get();
 
-        $verb = $event->review->wasRecentlyCreated ? 'reviewed' : 'updated their review of';
-
-        Notification::send($recipients, new ProposalActivityNotification(ProposalActivity::for(
+        Notification::send($admins, new ProposalActivityNotification(ProposalActivity::for(
             ProposalActivityType::Reviewed,
-            $event->proposal,
-            $event->actor,
-            "{$event->actor->name} {$verb} a proposal.",
+            $proposal,
+            $actor,
+            "{$actor->name} {$verb} a proposal.",
         )));
+
+        // Authors can't read reviews, so they learn that one arrived, not who wrote it or what it says.
+        if ($event->isNewReview && $proposal->user_id !== $actor->id) {
+            Notification::send(User::query()->whereKey($proposal->user_id)->get(), new ProposalActivityNotification(ProposalActivity::for(
+                ProposalActivityType::Reviewed,
+                $proposal,
+                'A reviewer',
+                'Your proposal received a new review.',
+            )));
+        }
     }
 }

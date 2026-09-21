@@ -6,12 +6,14 @@ import AppButton from '@/components/ui/AppButton.vue';
 import TextField from '@/components/ui/TextField.vue';
 import { useForm } from '@/composables/useForm';
 import { LIMITS } from '@/lib/config';
+import { useConfigStore } from '@/stores/config';
 import { useToastStore } from '@/stores/toasts';
 import { ref } from 'vue';
 import { RouterLink, useRouter } from 'vue-router';
 
 const router = useRouter();
 const toasts = useToastStore();
+const maxTags = useConfigStore().settings.tags_max_per_proposal;
 const progress = ref<number | null>(null);
 
 const form = useForm({ title: '', description: '', tags: [] as string[], attachment: null as File | null });
@@ -51,8 +53,8 @@ async function submit(): Promise<void> {
             <TagInput
                 v-model="form.data.tags"
                 label="Tags"
-                :max="LIMITS.tagsMax"
-                :hint="`Pick existing tags or type a new one and press Enter. Up to ${LIMITS.tagsMax}.`"
+                :max="maxTags"
+                :hint="`Pick existing tags or type a new one and press Enter. Up to ${maxTags}.`"
                 :error="form.errors.value.tags"
             />
             <FileDrop v-model="form.data.attachment" :progress="progress" :error="form.errors.value.attachment" />

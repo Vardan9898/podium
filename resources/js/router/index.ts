@@ -1,4 +1,5 @@
 import { useAuthStore } from '@/stores/auth';
+import { useConfigStore } from '@/stores/config';
 import { Permission } from '@/types/api';
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router';
 import { authGuard } from './guards';
@@ -50,7 +51,11 @@ export const router = createRouter({
     scrollBehavior: (_to, _from, saved) => saved ?? { top: 0 },
 });
 
-router.beforeEach((to) => authGuard(to, useAuthStore()));
+router.beforeEach(async (to) => {
+    await useConfigStore().ensureLoaded();
+
+    return authGuard(to, useAuthStore());
+});
 
 router.afterEach((to) => {
     document.title = [to.meta.title, import.meta.env.VITE_APP_NAME].filter(Boolean).join(' · ');

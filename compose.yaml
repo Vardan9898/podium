@@ -32,7 +32,7 @@ services:
                 WWWGROUP: '${WWWGROUP}'
         image: 'sail-8.4/app'
         restart: unless-stopped
-        command: ['php', '/var/www/html/artisan', 'queue:work', 'redis', '--tries=3', '--timeout=60', '--sleep=1']
+        command: ['php', '/var/www/html/artisan', 'queue:listen', 'redis', '--tries=3', '--timeout=60']
         environment:
             WWWUSER: '${WWWUSER}'
             LARAVEL_SAIL: 1

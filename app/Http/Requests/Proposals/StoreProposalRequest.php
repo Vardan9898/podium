@@ -6,6 +6,7 @@ namespace App\Http\Requests\Proposals;
 
 use App\Data\ProposalData;
 use App\Models\Proposal;
+use App\Models\Tag;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -14,6 +15,20 @@ final class StoreProposalRequest extends FormRequest
     public function authorize(): bool
     {
         return $this->user()?->can('create', Proposal::class) ?? false;
+    }
+
+    /**
+     * Validate tags in the form they will be stored, so length and uniqueness rules can't be
+     * sidestepped with padding ("  a  ") or spacing variants ("Vue  JS" vs "Vue JS").
+     */
+    protected function prepareForValidation(): void
+    {
+        if (is_array($tags = $this->input('tags'))) {
+            $this->merge(['tags' => array_map(
+                fn (mixed $tag): mixed => is_string($tag) ? Tag::normalizeName($tag) : $tag,
+                $tags,
+            )]);
+        }
     }
 
     /** @return array<string, ValidationRule|array<mixed>|string> */

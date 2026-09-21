@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Actions\Notifications\ListNotifications;
 use App\Actions\Notifications\MarkNotificationsRead;
 use App\Http\Requests\Notifications\MarkNotificationsReadRequest;
 use App\Http\Resources\NotificationResource;
@@ -17,10 +18,10 @@ final class NotificationController extends Controller
     /**
      * List your notifications, newest first.
      */
-    public function index(#[CurrentUser] User $user): AnonymousResourceCollection
+    public function index(#[CurrentUser] User $user, ListNotifications $listNotifications): AnonymousResourceCollection
     {
-        return NotificationResource::collection($user->notifications()->paginate(20))
-            ->additional(['unread_count' => $user->unreadNotifications()->count()]);
+        return NotificationResource::collection($listNotifications->handle($user))
+            ->additional(['unread_count' => $user->unreadNotificationCount()]);
     }
 
     /**
@@ -33,7 +34,7 @@ final class NotificationController extends Controller
         #[CurrentUser] User $user,
         MarkNotificationsRead $markRead,
     ): Response {
-        $markRead->handle($user, $request->ids());
+        $markRead->handle($user, $request->toData());
 
         return response()->noContent();
     }

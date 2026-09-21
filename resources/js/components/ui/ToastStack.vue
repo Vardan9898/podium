@@ -20,6 +20,10 @@ const accent = { info: 'bg-signal', success: 'bg-approved', error: 'bg-rejected'
                 :key="toast.id"
                 class="pointer-events-auto relative flex w-full max-w-sm overflow-hidden rounded-xl border border-ink/10 bg-ink text-card shadow-[0_18px_40px_-18px_rgb(27_26_23/0.6)]"
                 :role="toast.tone === 'error' ? 'alert' : 'status'"
+                @mouseenter="store.hold(toast.id)"
+                @mouseleave="store.release(toast.id)"
+                @focusin="store.hold(toast.id)"
+                @focusout="store.release(toast.id)"
             >
                 <span :class="accent[toast.tone]" class="w-1.5 shrink-0" aria-hidden="true" />
                 <div class="min-w-0 flex-1 px-4 py-3">

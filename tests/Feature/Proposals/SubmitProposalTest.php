@@ -87,6 +87,9 @@ it('rejects invalid submissions', function (array $payload, string $field): void
     'too many tags' => fn () => [['tags' => array_map(fn ($i) => "tag {$i}", range(1, 11))], 'tags'],
     'duplicate tags ignoring case' => fn () => [['tags' => ['PHP', 'php']], 'tags.1'],
     'tag without letters' => fn () => [['tags' => ['!!']], 'tags.0'],
+    'tag too short once trimmed' => fn () => [['tags' => ['  a  ']], 'tags.0'],
+    'tag too long' => fn () => [['tags' => [str_repeat('щ', 31)]], 'tags.0'],
+    'duplicate tags ignoring spacing' => fn () => [['tags' => ['Vue JS', 'vue   js']], 'tags.1'],
 ]);
 
 it('forbids users without the create permission from submitting', function (Role $role): void {

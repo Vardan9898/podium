@@ -8,10 +8,10 @@ import AppButton from '@/components/ui/AppButton.vue';
 import EmptyState from '@/components/ui/EmptyState.vue';
 import StatusBadge from '@/components/ui/StatusBadge.vue';
 import { useCan } from '@/composables/useCan';
-import { RATING } from '@/lib/config';
 import { formatDate, reference, timeAgo } from '@/lib/format';
 import { HOME } from '@/router/guards';
 import { useAuthStore } from '@/stores/auth';
+import { useConfigStore } from '@/stores/config';
 import { useNotificationStore } from '@/stores/notifications';
 import { Permission, type Proposal, type ProposalStatus } from '@/types/api';
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
@@ -21,6 +21,7 @@ const props = defineProps<{ id: number }>();
 
 const auth = useAuthStore();
 const notifications = useNotificationStore();
+const config = useConfigStore();
 const canReview = useCan(Permission.ReviewProposals);
 const canChangeStatus = useCan(Permission.ChangeProposalStatus);
 
@@ -34,11 +35,12 @@ const myReview = computed(() => proposal.value?.reviews?.find((review) => review
 async function load({ quiet = false } = {}): Promise<void> {
     controller?.abort();
     controller = new AbortController();
+    const { signal } = controller;
     loading.value = !quiet;
     error.value = null;
 
     try {
-        proposal.value = await getProposal(props.id, controller.signal);
+        proposal.value = await getProposal(props.id, signal);
     } catch (e: unknown) {
         if (isAbort(e)) {
             return;
@@ -49,7 +51,9 @@ async function load({ quiet = false } = {}): Promise<void> {
             404: { title: 'Proposal not found.', body: 'It may have been removed.' },
         }[statusOf(e) ?? 0] ?? { title: 'We could not load this proposal.', body: messageOf(e) };
     } finally {
-        loading.value = false;
+        if (!signal.aborted) {
+            loading.value = false;
+        }
     }
 }
 
@@ -132,7 +136,7 @@ onBeforeUnmount(() => controller?.abort());
                                 {{ review.reviewer?.name }}<span v-if="review.reviewer?.id === auth.user?.id" class="text-ink-faint"> (you)</span>
                             </p>
                             <p class="font-mono text-sm">
-                                <span class="font-display text-xl font-semibold">{{ review.rating }}</span><span class="text-ink-faint">/{{ RATING.max }}</span>
+                                <span class="font-display text-xl font-semibold">{{ review.rating }}</span><span class="text-ink-faint">/{{ config.settings.rating.max }}</span>
                             </p>
                         </div>
                         <p class="mt-2 text-sm leading-relaxed whitespace-pre-line text-ink-soft">{{ review.comment }}</p>

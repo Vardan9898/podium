@@ -55,6 +55,31 @@ it('notifies the author and admins when a proposal is reviewed, never the review
     );
 });
 
+it('tells the author a review arrived without revealing the reviewer', function (): void {
+    $proposal = Proposal::factory()->for($this->speaker, 'author')->create();
+
+    app(ReviewProposal::class)->handle($this->reviewer, $proposal, new ReviewData(8, 'Great'));
+
+    Notification::assertSentTo($this->speaker, ProposalActivityNotification::class, fn (ProposalActivityNotification $n) => $n->activity->actorName === 'A reviewer'
+        && ! str_contains($n->activity->message, $this->reviewer->name));
+    Notification::assertSentTo($this->admin, ProposalActivityNotification::class, fn (ProposalActivityNotification $n) => $n->activity->actorName === $this->reviewer->name);
+});
+
+it('notifies admins but not the author when a review is edited, and nobody when nothing changed', function (): void {
+    $proposal = Proposal::factory()->for($this->speaker, 'author')->create();
+    $action = app(ReviewProposal::class);
+    $action->handle($this->reviewer, $proposal, new ReviewData(8, 'Great'));
+    Notification::fake();
+
+    $action->handle($this->reviewer, $proposal, new ReviewData(9, 'Even better'));
+    Notification::assertSentTo($this->admin, ProposalActivityNotification::class);
+    Notification::assertNotSentTo($this->speaker, ProposalActivityNotification::class);
+
+    Notification::fake();
+    $action->handle($this->reviewer, $proposal, new ReviewData(9, 'Even better'));
+    Notification::assertNothingSent();
+});
+
 it('notifies the author and the reviewers of that proposal on a status change, never the admin', function (): void {
     $proposal = Proposal::factory()->for($this->speaker, 'author')->create();
     Review::factory()->for($proposal)->for($this->reviewer, 'author')->create();

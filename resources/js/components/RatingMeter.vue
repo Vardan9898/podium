@@ -1,14 +1,16 @@
 <script setup lang="ts">
-import { RATING } from '@/lib/config';
+import { useConfigStore } from '@/stores/config';
 import { computed } from 'vue';
 
 const props = defineProps<{ average: number | null | undefined; count: number | undefined }>();
 
-const percent = computed(() => ((props.average ?? 0) / RATING.max) * 100);
+const config = useConfigStore();
+const max = computed(() => config.settings.rating.max);
+const percent = computed(() => ((props.average ?? 0) / max.value) * 100);
 </script>
 
 <template>
-    <div class="flex items-center gap-3" :aria-label="average == null ? 'No reviews yet' : `Average rating ${average} out of ${RATING.max} from ${count} reviews`">
+    <div class="flex items-center gap-3" :aria-label="average == null ? 'No reviews yet' : `Average rating ${average} out of ${max} from ${count} reviews`">
         <template v-if="average != null">
             <span class="font-display text-lg leading-none font-semibold tabular-nums">{{ average.toFixed(1) }}</span>
             <span class="relative h-1.5 w-16 overflow-hidden rounded-full bg-paper-deep" aria-hidden="true">

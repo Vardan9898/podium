@@ -22,6 +22,7 @@ return [
     'pagination' => [
         'per_page' => 15,
         'max_per_page' => 50,
+        'notifications_per_page' => 20,
     ],
 
 ];

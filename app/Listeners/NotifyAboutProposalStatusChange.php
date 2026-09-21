@@ -9,10 +9,11 @@ use App\Enums\ProposalActivityType;
 use App\Events\ProposalStatusChanged;
 use App\Models\User;
 use App\Notifications\ProposalActivityNotification;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Notification;
 
-final class NotifyAboutProposalStatusChange
+final class NotifyAboutProposalStatusChange implements ShouldQueue
 {
     public function handle(ProposalStatusChanged $event): void
     {

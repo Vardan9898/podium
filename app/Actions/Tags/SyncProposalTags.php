@@ -21,17 +21,17 @@ final class SyncProposalTags
     {
         $tags = collect($names)
             ->map(fn (string $name): string => Tag::normalizeName($name))
-            ->unique(fn (string $name): string => Tag::slugFor($name))
-            ->keyBy(fn (string $name): string => Tag::slugFor($name))
-            ->forget('');
+            ->filter(fn (string $name): bool => $name !== '')
+            ->unique(fn (string $name): string => Tag::keyFor($name))
+            ->keyBy(fn (string $name): string => Tag::keyFor($name));
 
         if ($tags->isNotEmpty()) {
             $now = now();
 
             Tag::query()->insertOrIgnore(
-                $tags->map(fn (string $name, string $slug): array => [
+                $tags->map(fn (string $name, string $key): array => [
                     'name' => $name,
-                    'slug' => $slug,
+                    'normalized_name' => $key,
                     'created_at' => $now,
                     'updated_at' => $now,
                 ])->values()->all(),
@@ -39,7 +39,7 @@ final class SyncProposalTags
         }
 
         $proposal->tags()->sync(
-            Tag::query()->whereIn('slug', $tags->keys())->pluck('id'),
+            Tag::query()->whereIn('normalized_name', $tags->keys())->pluck('id'),
         );
     }
 }

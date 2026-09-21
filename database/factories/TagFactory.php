@@ -19,12 +19,12 @@ final class TagFactory extends Factory
 
         return [
             'name' => $name,
-            'slug' => Tag::slugFor($name),
+            'normalized_name' => Tag::keyFor($name),
         ];
     }
 
     public function named(string $name): self
     {
-        return $this->state(['name' => $name, 'slug' => Tag::slugFor($name)]);
+        return $this->state(['name' => $name, 'normalized_name' => Tag::keyFor($name)]);
     }
 }

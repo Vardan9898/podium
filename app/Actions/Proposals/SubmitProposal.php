@@ -9,6 +9,7 @@ use App\Data\ProposalData;
 use App\Events\ProposalSubmitted;
 use App\Models\Proposal;
 use App\Models\User;
+use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use RuntimeException;
@@ -26,31 +27,42 @@ final class SubmitProposal
     public function handle(User $author, ProposalData $data): Proposal
     {
         $disk = Storage::disk(config()->string('proposals.attachment.disk'));
+
+        return DB::transaction(function () use ($author, $data, $disk): Proposal {
+            $proposal = $author->proposals()->create([
+                'title' => $data->title,
+                'description' => $data->description,
+            ]);
+
+            $this->storeAttachment($proposal, $data, $disk);
+
+            // Listeners are queued and run after commit, so a notification outage can never undo this write.
+            ProposalSubmitted::dispatch($proposal, $author);
+
+            return $proposal;
+        });
+    }
+
+    /**
+     * The file is written inside the transaction; if any later step throws, the row is rolled
+     * back and the file removed, so neither is left without the other.
+     */
+    private function storeAttachment(Proposal $proposal, ProposalData $data, Filesystem $disk): void
+    {
         $storedPath = null;
 
         try {
-            return DB::transaction(function () use ($author, $data, $disk, &$storedPath): Proposal {
-                $proposal = $author->proposals()->create([
-                    'title' => $data->title,
-                    'description' => $data->description,
+            if ($data->attachment !== null) {
+                $storedPath = $disk->putFile("proposals/{$proposal->id}", $data->attachment)
+                    ?: throw new RuntimeException('The attachment could not be stored.');
+
+                $proposal->update([
+                    'attachment_path' => $storedPath,
+                    'attachment_original_name' => $data->attachment->getClientOriginalName(),
                 ]);
+            }
 
-                if ($data->attachment !== null) {
-                    $storedPath = $disk->putFile("proposals/{$proposal->id}", $data->attachment)
-                        ?: throw new RuntimeException('The attachment could not be stored.');
-
-                    $proposal->update([
-                        'attachment_path' => $storedPath,
-                        'attachment_original_name' => $data->attachment->getClientOriginalName(),
-                    ]);
-                }
-
-                $this->syncTags->handle($proposal, $data->tags);
-
-                ProposalSubmitted::dispatch($proposal, $author);
-
-                return $proposal;
-            });
+            $this->syncTags->handle($proposal, $data->tags);
         } catch (Throwable $e) {
             if (is_string($storedPath)) {
                 $disk->delete($storedPath);

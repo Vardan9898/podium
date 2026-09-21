@@ -47,7 +47,6 @@ export interface CurrentUser extends User {
 export interface Tag {
     id: number;
     name: string;
-    slug: string;
 }
 
 export interface Review {
@@ -88,6 +87,13 @@ export interface AppNotification {
     data: ActivityPayload;
     read_at: string | null;
     created_at: string;
+}
+
+export interface ClientConfig {
+    allow_admin_registration: boolean;
+    rating: { min: number; max: number };
+    attachment_max_kilobytes: number;
+    tags_max_per_proposal: number;
 }
 
 export interface Resource<T> {

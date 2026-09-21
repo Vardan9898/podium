@@ -31,6 +31,12 @@ it('registers a user with the chosen role and signs them in', function (Role $ro
     $this->assertAuthenticatedAs($user, 'web');
 })->with(Role::cases());
 
+it('stores the email normalised to lower case', function (): void {
+    $this->postJson('/api/register', registrationPayload(Role::Speaker, ['email' => ' Jane@Example.COM ']))
+        ->assertCreated()
+        ->assertJsonPath('data.email', 'jane@example.com');
+});
+
 it('blocks admin self-registration when the flag is off', function (): void {
     config(['auth.allow_admin_registration' => false]);
 

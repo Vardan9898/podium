@@ -6,8 +6,8 @@ import TagInput from './TagInput.vue';
 vi.mock('@/api/tags', () => ({
     searchTags: vi.fn(async (term: string) =>
         [
-            { id: 1, name: 'Laravel', slug: 'laravel' },
-            { id: 2, name: 'Vue.js', slug: 'vue-js' },
+            { id: 1, name: 'Laravel' },
+            { id: 2, name: 'Vue.js' },
         ].filter((tag) => tag.name.toLowerCase().includes(term.toLowerCase())),
     ),
 }));

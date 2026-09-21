@@ -11,6 +11,13 @@ use Illuminate\Validation\ValidationException;
 
 final class LoginRequest extends FormRequest
 {
+    protected function prepareForValidation(): void
+    {
+        if (is_string($email = $this->input('email'))) {
+            $this->merge(['email' => mb_strtolower(mb_trim($email))]);
+        }
+    }
+
     /** @return array<string, ValidationRule|array<mixed>|string> */
     public function rules(): array
     {

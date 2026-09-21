@@ -7,6 +7,7 @@ namespace App\Policies;
 use App\Enums\Permission;
 use App\Models\Proposal;
 use App\Models\User;
+use Illuminate\Auth\Access\Response;
 
 /**
  * Checks permissions only. Roles are just permission bundles (see App\Enums\Role).
@@ -18,10 +19,16 @@ final class ProposalPolicy
         return $user->canAny([Permission::ViewAnyProposals, Permission::ViewOwnProposals]);
     }
 
-    public function view(User $user, Proposal $proposal): bool
+    /**
+     * Denied as 404, not 403: a speaker must not be able to tell someone else's proposal
+     * from an id that doesn't exist.
+     */
+    public function view(User $user, Proposal $proposal): Response
     {
-        return $user->can(Permission::ViewAnyProposals)
+        $allowed = $user->can(Permission::ViewAnyProposals)
             || ($user->can(Permission::ViewOwnProposals) && $proposal->author()->is($user));
+
+        return $allowed ? Response::allow() : Response::denyAsNotFound();
     }
 
     public function create(User $user): bool
@@ -31,20 +38,20 @@ final class ProposalPolicy
 
     public function review(User $user, Proposal $proposal): bool
     {
-        return $user->can(Permission::ReviewProposals) && $this->view($user, $proposal);
+        return $user->can(Permission::ReviewProposals) && $this->view($user, $proposal)->allowed();
     }
 
     public function changeStatus(User $user, Proposal $proposal): bool
     {
-        return $user->can(Permission::ChangeProposalStatus) && $this->view($user, $proposal);
+        return $user->can(Permission::ChangeProposalStatus) && $this->view($user, $proposal)->allowed();
     }
 
     public function viewReviews(User $user, Proposal $proposal): bool
     {
-        return $user->can(Permission::ViewReviews) && $this->view($user, $proposal);
+        return $user->can(Permission::ViewReviews) && $this->view($user, $proposal)->allowed();
     }
 
-    public function downloadAttachment(User $user, Proposal $proposal): bool
+    public function downloadAttachment(User $user, Proposal $proposal): Response
     {
         return $this->view($user, $proposal);
     }

@@ -18,9 +18,11 @@ final class ProposalAttachmentController extends Controller
      */
     public function __invoke(Proposal $proposal): StreamedResponse
     {
-        abort_unless($proposal->hasAttachment(), 404);
+        $disk = Storage::disk(config()->string('proposals.attachment.disk'));
+        $path = (string) $proposal->attachment_path;
 
-        return Storage::disk(config()->string('proposals.attachment.disk'))
-            ->download((string) $proposal->attachment_path, $proposal->attachment_original_name);
+        abort_unless($proposal->hasAttachment() && $disk->exists($path), 404);
+
+        return $disk->download($path, $proposal->attachment_original_name);
     }
 }

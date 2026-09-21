@@ -6,7 +6,7 @@ use App\Actions\Tags\SyncProposalTags;
 use App\Models\Proposal;
 use App\Models\Tag;
 
-it('creates missing tags, reuses existing ones and de-duplicates by slug', function (): void {
+it('creates missing tags, reuses existing ones and de-duplicates case-insensitively', function (): void {
     $existing = Tag::factory()->named('Laravel')->create();
     $proposal = Proposal::factory()->create();
 

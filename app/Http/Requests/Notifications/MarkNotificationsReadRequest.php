@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Notifications;
 
+use App\Data\NotificationSelection;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -18,14 +19,11 @@ final class MarkNotificationsReadRequest extends FormRequest
         ];
     }
 
-    /**
-     * @return list<string>|null Null means "all unread".
-     */
-    public function ids(): ?array
+    public function toData(): NotificationSelection
     {
         /** @var list<string>|null $ids */
         $ids = $this->has('ids') ? array_values($this->array('ids')) : null;
 
-        return $ids;
+        return new NotificationSelection($ids);
     }
 }

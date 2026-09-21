@@ -14,7 +14,7 @@ it('lets speakers open their own proposal but not anyone else\'s', function (): 
     $other = Proposal::factory()->create();
 
     $this->actingAs($speaker)->getJson("/api/proposals/{$own->id}")->assertOk()->assertJsonMissingPath('data.reviews');
-    $this->actingAs($speaker)->getJson("/api/proposals/{$other->id}")->assertForbidden();
+    $this->actingAs($speaker)->getJson("/api/proposals/{$other->id}")->assertNotFound()->assertExactJson(['message' => 'Not found.']);
 });
 
 it('includes reviews and scores only for users allowed to read them', function (Role $role, bool $seesReviews): void {
@@ -70,7 +70,13 @@ describe('attachment download', function (): void {
         $proposal = Proposal::factory()->for($author, 'author')->withAttachment('proposals/1/abc.pdf')->create();
 
         $this->actingAs($author)->get("/api/proposals/{$proposal->id}/attachment")->assertOk();
-        $this->actingAs(userWithRole(Role::Speaker))->getJson("/api/proposals/{$proposal->id}/attachment")->assertForbidden();
+        $this->actingAs(userWithRole(Role::Speaker))->getJson("/api/proposals/{$proposal->id}/attachment")->assertNotFound();
+    });
+
+    it('returns 404 when the file is missing from disk', function (): void {
+        $proposal = Proposal::factory()->withAttachment('proposals/1/gone.pdf')->create();
+
+        $this->actingAs(userWithRole(Role::Admin))->getJson("/api/proposals/{$proposal->id}/attachment")->assertNotFound();
     });
 
     it('returns 404 when the proposal has no attachment', function (): void {

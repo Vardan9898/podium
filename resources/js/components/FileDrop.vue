@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ATTACHMENT } from '@/lib/config';
-import { ref, useId } from 'vue';
+import { PDF_MIME_TYPE } from '@/lib/config';
+import { useConfigStore } from '@/stores/config';
+import { computed, ref, useId } from 'vue';
 
 defineProps<{ error?: string; progress: number | null }>();
 const file = defineModel<File | null>({ required: true });
@@ -9,6 +10,8 @@ const id = useId();
 const localError = ref<string | null>(null);
 const dragging = ref(false);
 const input = ref<HTMLInputElement | null>(null);
+const maxKilobytes = computed(() => useConfigStore().settings.attachment_max_kilobytes);
+const maxLabel = computed(() => `${Math.round(maxKilobytes.value / 1024)} MB`);
 
 /** UX-only pre-check; the server re-validates the actual file contents. */
 function accept(candidate: File | undefined): void {
@@ -18,10 +21,10 @@ function accept(candidate: File | undefined): void {
         return;
     }
 
-    if (candidate.type !== ATTACHMENT.mimeType && !candidate.name.toLowerCase().endsWith('.pdf')) {
+    if (candidate.type !== PDF_MIME_TYPE && !candidate.name.toLowerCase().endsWith('.pdf')) {
         localError.value = 'Only PDF files are accepted.';
-    } else if (candidate.size > ATTACHMENT.maxBytes) {
-        localError.value = 'The file must be 4 MB or smaller.';
+    } else if (candidate.size > maxKilobytes.value * 1024) {
+        localError.value = `The file must be ${maxLabel.value} or smaller.`;
     } else {
         file.value = candidate;
     }
@@ -43,7 +46,7 @@ const size = (bytes: number): string => `${(bytes / 1024 / 1024).toFixed(bytes <
         <span :id="`${id}-label`" class="block text-sm font-medium">Slides or outline <span class="font-normal text-ink-faint">(optional)</span></span>
         <div
             v-if="!file"
-            class="relative rounded-xl border-2 border-dashed px-6 py-8 text-center transition"
+            class="relative rounded-xl border-2 border-dashed px-6 py-8 text-center transition focus-within:border-ink focus-within:ring-2 focus-within:ring-signal/30"
             :class="dragging ? 'border-signal bg-signal/5' : error || localError ? 'border-rejected/60' : 'border-rule hover:border-ink/40'"
             @dragover.prevent="dragging = true"
             @dragleave="dragging = false"
@@ -60,7 +63,7 @@ const size = (bytes: number): string => `${(bytes / 1024 / 1024).toFixed(bytes <
                 @change="accept(($event.target as HTMLInputElement).files?.[0])"
             />
             <p class="font-display text-lg">Drop a PDF here, or <span class="text-signal underline underline-offset-4">browse</span></p>
-            <p :id="`${id}-help`" class="mt-1 font-mono text-xs text-ink-faint">PDF only · up to 4 MB</p>
+            <p :id="`${id}-help`" class="mt-1 font-mono text-xs text-ink-faint">PDF only · up to {{ maxLabel }}</p>
         </div>
         <div v-else class="flex items-center gap-3 rounded-xl border border-rule bg-card px-4 py-3">
             <span class="grid size-10 shrink-0 place-items-center rounded-lg bg-signal/10 font-mono text-[10px] font-medium text-signal">PDF</span>

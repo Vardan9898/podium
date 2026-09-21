@@ -14,6 +14,7 @@ final class ReviewProposal
 {
     /**
      * One review per reviewer per proposal: submitting again updates it.
+     * Re-sending an identical review changes nothing and notifies no one.
      */
     public function handle(User $reviewer, Proposal $proposal, ReviewData $data): Review
     {
@@ -22,7 +23,9 @@ final class ReviewProposal
             ['rating' => $data->rating, 'comment' => $data->comment],
         );
 
-        ProposalReviewed::dispatch($proposal, $review, $reviewer);
+        if ($review->wasRecentlyCreated || $review->wasChanged()) {
+            ProposalReviewed::dispatch($proposal, $review, $reviewer, $review->wasRecentlyCreated);
+        }
 
         return $review;
     }

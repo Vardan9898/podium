@@ -12,10 +12,14 @@ it('normalizes display names', function (string $input, string $expected): void 
     'keeps casing' => ['DevOps', 'DevOps'],
 ]);
 
-it('derives the same slug for names differing only in case, spacing or accents', function (): void {
-    expect(Tag::slugFor('Vue JS'))
-        ->toBe(Tag::slugFor('  vue   js '))
-        ->toBe(Tag::slugFor('VUE JS'))
-        ->toBe('vue-js')
-        ->and(Tag::slugFor('Café'))->toBe(Tag::slugFor('cafe'));
+it('derives the same key for names differing only in case or spacing', function (): void {
+    expect(Tag::keyFor('Vue JS'))
+        ->toBe(Tag::keyFor('  vue   js '))
+        ->toBe(Tag::keyFor('VUE JS'))
+        ->toBe('vue js');
+});
+
+it('keeps names distinct when they differ by more than case', function (): void {
+    expect(array_unique(array_map(Tag::keyFor(...), ['C', 'C#', 'C++', 'Vue.js', 'Vuejs', '日本語'])))->toHaveCount(6)
+        ->and(Tag::keyFor('ÉCOLE'))->toBe('école');
 });

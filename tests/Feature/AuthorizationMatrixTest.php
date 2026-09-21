@@ -12,13 +12,14 @@ use Illuminate\Support\Facades\Storage;
 /*
  * Every API route × every kind of caller, keyed by route name.
  * The proposal belongs to a *different* speaker, so the speaker column proves
- * speakers cannot reach other people's work.
+ * speakers cannot reach other people's work (404: they can't even learn it exists).
  *
  * Expected status codes: [guest, speaker, reviewer, admin].
  */
 function authorizationMatrix(): array
 {
     return [
+        'config' => [[], [200, 200, 200, 200]],
         'register' => [[
             'name' => 'New', 'email' => 'new@example.com', 'role' => Role::Speaker->value,
             'password' => 'password1', 'password_confirmation' => 'password1',
@@ -28,8 +29,8 @@ function authorizationMatrix(): array
         'me' => [[], [401, 200, 200, 200]],
         'proposals.index' => [[], [401, 200, 200, 200]],
         'proposals.store' => [['title' => 'T', 'description' => 'D'], [401, 201, 403, 403]],
-        'proposals.show' => [[], [401, 403, 200, 200]],
-        'proposals.attachment' => [[], [401, 403, 200, 200]],
+        'proposals.show' => [[], [401, 404, 200, 200]],
+        'proposals.attachment' => [[], [401, 404, 200, 200]],
         'proposals.status' => [['status' => ProposalStatus::Approved->value], [401, 403, 403, 200]],
         'proposals.review' => [['rating' => 5, 'comment' => 'Nice'], [401, 403, 201, 403]],
         'tags.index' => [[], [401, 200, 200, 200]],

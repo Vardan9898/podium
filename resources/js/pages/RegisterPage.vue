@@ -5,17 +5,22 @@ import TextField from '@/components/ui/TextField.vue';
 import { useForm } from '@/composables/useForm';
 import { HOME } from '@/router/guards';
 import { useAuthStore } from '@/stores/auth';
+import { useConfigStore } from '@/stores/config';
 import { Role } from '@/types/api';
+import { computed } from 'vue';
 import { RouterLink, useRouter } from 'vue-router';
 
 const auth = useAuthStore();
 const router = useRouter();
 
-const roles = [
+const allRoles = [
     { value: Role.Speaker, title: 'Speaker', description: 'Submit talks and follow their status.' },
     { value: Role.Reviewer, title: 'Reviewer', description: 'Read every proposal, rate and comment.' },
     { value: Role.Admin, title: 'Admin', description: 'Approve or reject proposals.' },
 ] as const;
+
+const config = useConfigStore();
+const roles = computed(() => allRoles.filter((role) => role.value !== Role.Admin || config.settings.allow_admin_registration));
 
 const form = useForm({ name: '', email: '', password: '', password_confirmation: '', role: Role.Speaker as Role });
 
@@ -33,7 +38,7 @@ async function submit(): Promise<void> {
         <form class="space-y-5" novalidate @submit.prevent="submit">
             <fieldset>
                 <legend class="text-sm font-medium">I am joining as</legend>
-                <div class="mt-2 grid gap-2 sm:grid-cols-3">
+                <div class="mt-2 grid gap-2" :class="roles.length === 3 ? 'sm:grid-cols-3' : 'sm:grid-cols-2'">
                     <label v-for="role in roles" :key="role.value" class="relative cursor-pointer">
                         <input v-model="form.data.role" type="radio" name="role" :value="role.value" class="peer sr-only" />
                         <span class="block h-full rounded-xl border border-rule p-3 transition peer-checked:border-ink peer-checked:bg-ink peer-checked:text-card peer-focus-visible:outline-2 peer-focus-visible:outline-signal hover:border-ink">
