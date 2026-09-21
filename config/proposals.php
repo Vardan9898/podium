@@ -19,6 +19,11 @@ return [
         'autocomplete_limit' => 20,
     ],
 
+    'search' => [
+        // Upper bound on ids a search engine may return for one query.
+        'max_matches' => 1000,
+    ],
+
     'pagination' => [
         'per_page' => 15,
         'max_per_page' => 50,

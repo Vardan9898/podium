@@ -18,7 +18,7 @@ final class ListProposals
     {
         return Proposal::query()
             ->visibleTo($viewer)
-            ->search($filters->search)
+            ->titleMatches($filters->search)
             ->withAnyTags($filters->tags)
             ->status($filters->status)
             ->withSummary()

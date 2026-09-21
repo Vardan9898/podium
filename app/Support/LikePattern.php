@@ -11,6 +11,14 @@ final class LikePattern
      */
     public static function contains(string $term): string
     {
-        return '%'.addcslashes($term, '%_\\').'%';
+        return '%'.self::escape($term).'%';
+    }
+
+    /**
+     * Makes LIKE wildcards in user input match literally.
+     */
+    public static function escape(string $term): string
+    {
+        return addcslashes($term, '%_\\');
     }
 }

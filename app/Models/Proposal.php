@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Laravel\Scout\Searchable;
 
 /**
  * @property ProposalStatus $status
@@ -23,6 +24,8 @@ final class Proposal extends Model
 {
     /** @use HasFactory<ProposalFactory> */
     use HasFactory;
+
+    use Searchable;
 
     private const array SUMMARY_RELATIONS = ['author', 'tags'];
 
@@ -113,9 +116,15 @@ final class Proposal extends Model
         $query->whereRaw('1 = 0');
     }
 
-    /** @param  Builder<self>  $query */
+    /**
+     * Title search through Laravel Scout, so the engine is configuration (SCOUT_DRIVER).
+     * Scout only resolves matching ids; visibility, filters and pagination stay in SQL,
+     * which keeps results and counts correct for every engine.
+     *
+     * @param  Builder<self>  $query
+     */
     #[Scope]
-    protected function search(Builder $query, ?string $term): void
+    protected function titleMatches(Builder $query, ?string $term): void
     {
         $term = mb_trim((string) $term);
 
@@ -123,7 +132,22 @@ final class Proposal extends Model
             return;
         }
 
-        $query->whereLike('title', LikePattern::contains($term));
+        // The database engine feeds the term straight into ILIKE; hosted engines take plain text.
+        $engineTerm = config('scout.driver') === 'database' ? LikePattern::escape($term) : $term;
+
+        $query->whereKey(
+            self::search($engineTerm)->take(config()->integer('proposals.search.max_matches'))->keys(),
+        );
+    }
+
+    /**
+     * Only the title is searchable (per the brief).
+     *
+     * @return array{title: string}
+     */
+    public function toSearchableArray(): array
+    {
+        return ['title' => $this->title];
     }
 
     /**
