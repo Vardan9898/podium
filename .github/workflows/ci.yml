@@ -130,9 +130,16 @@ jobs:
                   cp .env.example .env
                   php artisan key:generate
 
+            # The group skips itself when no engine answers, so assert one is there first:
+            # otherwise a broken service would turn into a silently green job.
+            - name: Wait for Meilisearch
+              run: |
+                  for i in $(seq 1 30); do curl -sf http://127.0.0.1:7700/health && exit 0; sleep 2; done
+                  echo "Meilisearch never became healthy" && exit 1
+
             # Proves the documented Meilisearch swap really works, not just the database engine.
             - name: Pest (Meilisearch group)
-              run: vendor/bin/pest --group=meilisearch --ci
+              run: vendor/bin/pest --group=meilisearch --ci --fail-on-skipped
 
     frontend:
         name: Frontend (type-check · Vitest · build)

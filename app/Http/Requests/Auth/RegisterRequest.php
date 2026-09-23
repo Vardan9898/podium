@@ -28,7 +28,9 @@ final class RegisterRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique(User::class)],
             'password' => ['required', 'string', 'confirmed', Password::defaults()],
-            'role' => ['required', Rule::enum(Role::class)->only(Role::selfRegisterable())],
+            // Rule::in, not Rule::enum()->only(): an empty allow-list must reject every role,
+            // and enum()->only([]) means "no restriction".
+            'role' => ['required', 'string', Rule::in(array_column(Role::selfRegisterable(), 'value'))],
         ];
     }
 

@@ -12,7 +12,11 @@ export interface Toast {
 }
 
 const DISMISS_AFTER_MS = 6000;
+/** Toasts that link somewhere stay longer, so the link can be reached by keyboard. */
+const ACTIONABLE_DISMISS_AFTER_MS = 15000;
 const MAX_VISIBLE = 4;
+
+const lifetimeOf = (toast: Toast): number => (toast.to === undefined ? DISMISS_AFTER_MS : ACTIONABLE_DISMISS_AFTER_MS);
 
 export const useToastStore = defineStore('toasts', () => {
     const toasts = ref<Toast[]>([]);
@@ -25,10 +29,16 @@ export const useToastStore = defineStore('toasts', () => {
         toasts.value = toasts.value.filter((toast) => toast.id !== id);
     }
 
-    /** (Re)starts the auto-dismiss countdown. */
+    /** (Re)starts the auto-dismiss countdown with that toast's own lifetime. */
     function release(id: number): void {
+        const toast = toasts.value.find((candidate) => candidate.id === id);
+
+        if (!toast) {
+            return;
+        }
+
         clearTimeout(timers.get(id));
-        timers.set(id, setTimeout(() => dismiss(id), DISMISS_AFTER_MS));
+        timers.set(id, setTimeout(() => dismiss(id), lifetimeOf(toast)));
     }
 
     /** Pauses auto-dismiss while the toast is hovered or focused, so its link stays reachable. */
@@ -42,12 +52,7 @@ export const useToastStore = defineStore('toasts', () => {
         const overflow = toasts.value.length - (MAX_VISIBLE - 1);
         toasts.value.slice(0, Math.max(0, overflow)).forEach((old) => dismiss(old.id));
         toasts.value = [...toasts.value, { ...toast, id }];
-
-        // A toast with a link is actionable: leave it until it is dismissed or pushed out,
-        // otherwise a keyboard user can never reach the link in time.
-        if (toast.to === undefined) {
-            release(id);
-        }
+        release(id);
     }
 
     function clear(): void {

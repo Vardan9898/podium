@@ -23,7 +23,7 @@ function close({ restoreFocus = false } = {}): void {
 }
 
 const focusable = (): HTMLElement[] =>
-    [...(panel.value?.querySelectorAll<HTMLElement>('a[href], button:not([disabled])') ?? [])];
+    [...(panel.value?.querySelectorAll<HTMLElement>('a[href], button:not([disabled]), input, select, textarea') ?? [])];
 
 function onKeydown(event: KeyboardEvent): void {
     if (!open.value) {
@@ -123,7 +123,7 @@ onBeforeUnmount(() => {
                 :id="panelId"
                 ref="panel"
                 role="dialog"
-                aria-modal="false"
+                aria-modal="true"
                 :aria-labelledby="headingId"
                 class="fixed inset-x-3 top-16 z-40 overflow-hidden rounded-2xl border border-rule bg-card shadow-[0_24px_60px_-24px_rgb(27_26_23/0.45)] sm:absolute sm:inset-x-auto sm:top-12 sm:right-0 sm:w-96"
             >

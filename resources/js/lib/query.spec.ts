@@ -40,6 +40,9 @@ describe('list query', () => {
         expect(toLocationQuery(state)).toEqual({ awaiting_review: '1' });
         expect(parseListQuery({ awaiting_review: '1' })).toEqual(state);
         expect(parseListQuery({ awaiting_review: 'yes' }).awaitingReview).toBe(false);
-        expect(toApiQuery(state).awaiting_review).toBe(1); // Laravel's boolean rule rejects "true"
+        // The API accepts 'true' too, so a link shared in that form must work here as well.
+        expect(parseListQuery({ awaiting_review: 'true' }).awaitingReview).toBe(true);
+        expect(parseListQuery({ awaiting_review: 'TRUE' }).awaitingReview).toBe(true);
+        expect(toApiQuery(state).awaiting_review).toBe(1); // Laravel's boolean rule takes 1, not "true"
     });
 });

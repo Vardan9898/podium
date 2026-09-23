@@ -5,7 +5,7 @@ import { Permission, ProposalStatus, type ProposalSummary } from '@/types/api';
 import { computed } from 'vue';
 
 const props = defineProps<{ summary: ProposalSummary | null; status: ProposalStatus | ''; awaitingReview: boolean }>();
-const emit = defineEmits<{ status: [status: ProposalStatus | '']; awaiting: [value: boolean] }>();
+const emit = defineEmits<{ status: [status: ProposalStatus | '']; awaiting: [value: boolean]; showAll: [] }>();
 
 const canReview = useCan(Permission.ReviewProposals);
 const seesEverything = useCan(Permission.ViewAnyProposals);
@@ -19,16 +19,18 @@ const accents: Record<ProposalStatus, string> = {
 /** Speakers read this as "my talks"; reviewers and admins as "the programme". */
 const totalLabel = computed(() => (seesEverything.value ? 'All proposals' : 'Your proposals'));
 const tiles = computed(() => Object.values(ProposalStatus).map((value) => ({ value, count: props.summary?.by_status[value] ?? 0 })));
+const filtered = computed(() => props.status !== '' || props.awaitingReview);
 
 const tile = 'group relative rounded-2xl border px-4 py-3 text-left transition focus-visible:outline-2 focus-visible:outline-signal';
 </script>
 
 <template>
     <section v-if="summary" aria-label="Summary" class="grid animate-rise grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-[auto_repeat(3,minmax(0,1fr))_auto]">
-        <div :class="[tile, 'border-ink bg-ink text-card']">
+        <button type="button" :class="[tile, 'border-ink bg-ink text-card']" :aria-pressed="!filtered" @click="emit('showAll')">
             <p class="font-mono text-[11px] tracking-[0.15em] text-card/60 uppercase">{{ totalLabel }}</p>
             <p class="mt-1 font-display text-3xl leading-none font-semibold tabular-nums">{{ summary.total }}</p>
-        </div>
+            <p v-if="filtered" class="mt-0.5 text-xs text-card/60">show all</p>
+        </button>
 
         <button
             v-for="item in tiles"

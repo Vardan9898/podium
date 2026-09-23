@@ -49,13 +49,20 @@ it('only allows the roles configured as self-registerable', function (): void {
     $this->postJson('/api/register', registrationPayload(Role::Speaker))->assertCreated();
 });
 
-it('defaults to speaker-only when the setting is missing', function (): void {
-    config(['auth.self_registration_roles' => config('auth.self_registration_roles')]);
-
-    expect(Role::selfRegisterable())->toBe([Role::Speaker, Role::Reviewer, Role::Admin]);
-
+it('rejects every role when the configured list is empty', function (Role $role): void {
     config(['auth.self_registration_roles' => []]);
+
     expect(Role::selfRegisterable())->toBe([]);
+
+    $this->postJson('/api/register', registrationPayload($role))
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('role');
+})->with(Role::cases());
+
+it('reads the roles from configuration, keeping enum order', function (): void {
+    config(['auth.self_registration_roles' => ['admin', 'speaker', 'nonsense']]);
+
+    expect(Role::selfRegisterable())->toBe([Role::Speaker, Role::Admin]);
 });
 
 it('advertises the same roles to the sign-up form', function (): void {

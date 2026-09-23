@@ -6,8 +6,8 @@ Speakers submit talk proposals, reviewers rate them, admins decide — and every
 
 | | |
 |---|---|
-| Backend checks | Pint · Larastan level 8 · **205 Pest tests** (incl. a 56-case authorization matrix and 2 against a real Meilisearch) |
-| Frontend checks | `vue-tsc` strict · **61 Vitest specs** · production build |
+| Backend checks | Pint · Larastan level 8 · **208 Pest tests** (incl. a 56-case authorization matrix and 2 against a real Meilisearch) |
+| Frontend checks | `vue-tsc` strict · **62 Vitest specs** · production build |
 | API docs | OpenAPI 3.1 generated from code at **`/docs/api`** |
 | CI | GitHub Actions runs all of the above, plus `migrate --seed` and a `config:cache` smoke test, on pull requests and pushes to `main` |
 
@@ -76,7 +76,7 @@ All passwords are `password`.
 ## Features
 
 **Dashboard**
-- One list for everyone, with counts on top that change per role: a speaker sees their own proposals by status, a reviewer and an admin see the whole programme. Every tile filters the list below it, and the filter lives in the URL.
+- One list for everyone, with counts on top that change per role: a speaker sees their own proposals by status, a reviewer and an admin see the whole programme. Every tile is a filter — the first one clears them again — and the filter lives in the URL. The counts describe the whole visible set, so they don't move when you search.
 - Reviewers also get **"Awaiting your review"** — the proposals they have not rated yet — as a count and a one-click filter (`?awaiting_review=1`). Two aggregate queries, no extra listing.
 
 **Core**

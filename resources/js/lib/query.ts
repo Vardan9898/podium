@@ -26,7 +26,7 @@ export function parseListQuery(query: LocationQuery): ListState {
         search: first(query.search),
         tags: all(query.tags),
         status: STATUSES.includes(status) ? (status as ProposalStatus) : '',
-        awaitingReview: first(query.awaiting_review) === '1',
+        awaitingReview: ['1', 'true'].includes(first(query.awaiting_review).toLowerCase()),
         page: Number.isInteger(page) && page > 0 ? page : 1,
     };
 }
@@ -47,7 +47,6 @@ export function toApiQuery(state: ListState): ProposalQuery {
         search: state.search || undefined,
         tags: state.tags.length ? state.tags : undefined,
         status: state.status || undefined,
-        // 1/undefined: Laravel's boolean rule does not accept the string "true".
         awaiting_review: state.awaitingReview ? 1 : undefined,
         page: state.page,
     };

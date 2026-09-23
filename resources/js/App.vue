@@ -17,8 +17,10 @@ useNotifications();
 const main = ref<HTMLElement | null>(null);
 const announcement = ref('');
 
+// Deliberately route.path, not fullPath: filters and paging live in the query string, and
+// moving focus there would yank it out of the search box mid-keystroke.
 watch(
-    () => route.fullPath,
+    () => route.path,
     async () => {
         await nextTick();
         main.value?.focus();

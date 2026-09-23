@@ -37,13 +37,14 @@ const filters = computed<Filters>({
     set: (next) => void router.replace({ query: toLocationQuery({ ...state.value, ...next, page: 1 }) }),
 });
 
-/** The strip filters the same list, so it writes to the same URL. */
+/** The strip filters the same list, so it writes to the same URL — and like the filter bar
+ *  it replaces the history entry; only paging is worth a Back step. */
 function apply(change: Partial<{ status: ProposalStatus | ''; awaitingReview: boolean }>): void {
-    void router.push({ query: toLocationQuery({ ...state.value, ...change, page: 1 }) });
+    void router.replace({ query: toLocationQuery({ ...state.value, ...change, page: 1 }) });
 }
 
 function clearFilters(): void {
-    void router.push({ query: {} });
+    void router.replace({ query: {} });
 }
 
 function goToPage(page: number): void {
@@ -60,9 +61,7 @@ async function load({ quiet = false } = {}): Promise<void> {
     error.value = null;
 
     try {
-        const [page, counts] = await Promise.all([listProposals(toApiQuery(state.value), signal), getProposalSummary(signal)]);
-        result.value = page;
-        summary.value = counts;
+        result.value = await listProposals(toApiQuery(state.value), signal);
     } catch (e: unknown) {
         if (!isAbort(e)) {
             error.value = messageOf(e, 'We could not load proposals.');
@@ -74,7 +73,18 @@ async function load({ quiet = false } = {}): Promise<void> {
     }
 }
 
+/** Counts ignore the filters, so they load once and refresh only when something happened.
+ *  Their failure degrades the strip; it must not blank the list. */
+async function loadSummary(): Promise<void> {
+    try {
+        summary.value = await getProposalSummary();
+    } catch {
+        summary.value = null;
+    }
+}
+
 watch(state, () => load(), { immediate: true });
+void loadSummary();
 // Live updates: refresh silently when anything happens to a proposal.
 // Guarded: resetting the store on sign-out also changes lastActivity (to null).
 watch(
@@ -82,6 +92,7 @@ watch(
     (activity) => {
         if (activity) {
             void load({ quiet: true });
+            void loadSummary();
         }
     },
 );
@@ -104,9 +115,10 @@ onBeforeUnmount(() => controller?.abort());
             :awaiting-review="state.awaitingReview"
             @status="apply({ status: $event })"
             @awaiting="apply({ awaitingReview: $event })"
+            @show-all="clearFilters"
         />
 
-        <ProposalFilters v-model="filters" />
+        <ProposalFilters v-model="filters" :other-filters-active="state.awaitingReview" @reset="clearFilters" />
 
         <div v-if="loading" class="space-y-px overflow-hidden rounded-2xl border border-rule bg-card" aria-busy="true" aria-label="Loading proposals">
             <div v-for="n in 5" :key="n" role="status" class="animate-pulse space-y-3 px-6 py-6">

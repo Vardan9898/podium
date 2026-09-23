@@ -17,6 +17,9 @@ const SEARCH_DEBOUNCE_MS = 300;
 
 const filters = defineModel<Filters>({ required: true });
 
+const props = defineProps<{ otherFiltersActive?: boolean }>();
+const emit = defineEmits<{ reset: [] }>();
+
 const searchId = useId();
 const config = useConfigStore();
 const maxTags = computed(() => config.settings.tags_max_per_proposal);
@@ -48,7 +51,8 @@ watch(
 
 onBeforeUnmount(() => clearTimeout(timer));
 
-const hasFilters = (): boolean => filters.value.search !== '' || filters.value.tags.length > 0 || filters.value.status !== '';
+const hasFilters = (): boolean =>
+    filters.value.search !== '' || filters.value.tags.length > 0 || filters.value.status !== '' || props.otherFiltersActive === true;
 </script>
 
 <template>
@@ -91,7 +95,7 @@ const hasFilters = (): boolean => filters.value.search !== '' || filters.value.t
                 v-if="hasFilters()"
                 type="button"
                 class="mb-1 rounded-full px-3 py-2 text-sm text-ink-soft underline-offset-4 hover:text-signal hover:underline"
-                @click="((search = ''), (filters = { search: '', tags: [], status: '' }))"
+                @click="((search = ''), emit('reset'))"
             >
                 Reset
             </button>

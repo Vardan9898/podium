@@ -57,10 +57,18 @@ it('filters the list down to the reviewer\'s own queue', function (): void {
 
 it('ignores the queue filter for users who do not review', function (): void {
     $speaker = userWithRole(Role::Speaker);
-    Proposal::factory()->count(2)->for($speaker, 'author')->create();
+    $reviewed = Proposal::factory()->for($speaker, 'author')->create();
+    Proposal::factory()->for($speaker, 'author')->create();
+
+    // The speaker authored this review while they still had the reviewer role. Without the
+    // permission guard the filter would silently hide that proposal from its own author.
+    Review::factory()->for($reviewed)->for($speaker, 'author')->create();
 
     $this->actingAs($speaker)->getJson('/api/proposals?awaiting_review=1')->assertJsonPath('meta.total', 2);
-    $this->actingAs(userWithRole(Role::Admin))->getJson('/api/proposals?awaiting_review=1')->assertJsonPath('meta.total', 2);
+
+    $admin = userWithRole(Role::Admin);
+    $this->actingAs($admin)->getJson('/api/proposals?awaiting_review=1')->assertJsonPath('meta.total', 2);
+    $this->actingAs($admin)->getJson('/api/proposals/summary')->assertJsonPath('data.awaiting_my_review', null);
 });
 
 it('accepts every reasonable spelling of the queue flag, and rejects nonsense', function (string $value, int $expected): void {
