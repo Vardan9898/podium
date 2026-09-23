@@ -88,7 +88,7 @@ onBeforeUnmount(() => controller?.abort());
 
     <article v-else-if="proposal" class="grid gap-10 lg:grid-cols-[1fr_22rem]">
         <div class="min-w-0 animate-rise">
-            <RouterLink :to="HOME" class="font-mono text-xs tracking-widest text-ink-faint uppercase hover:text-signal">← All proposals</RouterLink>
+            <RouterLink :to="HOME" class="-my-2 inline-block py-2 font-mono text-xs tracking-widest text-ink-faint uppercase hover:text-signal">← All proposals</RouterLink>
 
             <div class="mt-5 flex flex-wrap items-center gap-3">
                 <span class="font-mono text-sm text-ink-faint">{{ reference(proposal.id) }}</span>

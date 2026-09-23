@@ -31,11 +31,15 @@ async function signOut(): Promise<void> {
             </RouterLink>
 
             <nav v-if="auth.user" class="ml-auto flex items-center gap-1 sm:gap-2" aria-label="Main">
-                <AppButton v-if="canSubmit" :to="{ name: 'proposals.create' }" class="hidden sm:inline-flex">New proposal</AppButton>
+<!-- The wrappers own the breakpoint: AppButton sets its own display utility, which a
+                     "hidden" class passed from here cannot reliably override. -->
+                <span v-if="canSubmit" class="hidden sm:contents">
+                    <AppButton :to="{ name: 'proposals.create' }">New proposal</AppButton>
+                </span>
                 <RouterLink
                     v-if="canSubmit"
                     :to="{ name: 'proposals.create' }"
-                    class="grid size-10 place-items-center rounded-full bg-ink text-xl text-card sm:hidden"
+                    class="grid size-10 shrink-0 place-items-center rounded-full bg-ink text-xl text-card sm:hidden"
                     aria-label="New proposal"
                 >
                     +

@@ -34,7 +34,7 @@ async function submit(): Promise<void> {
 
 <template>
     <div class="mx-auto max-w-3xl">
-        <RouterLink :to="{ name: 'proposals.index' }" class="font-mono text-xs tracking-widest text-ink-faint uppercase hover:text-signal">← All proposals</RouterLink>
+        <RouterLink :to="{ name: 'proposals.index' }" class="-my-2 inline-block py-2 font-mono text-xs tracking-widest text-ink-faint uppercase hover:text-signal">← All proposals</RouterLink>
         <h1 class="mt-4 font-display text-4xl font-bold tracking-tight sm:text-5xl">Submit a talk</h1>
         <p class="mt-3 text-ink-soft">Tell reviewers what you'll cover and why it matters. You can attach slides or an outline.</p>
 
