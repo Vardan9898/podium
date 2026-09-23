@@ -11,7 +11,7 @@
     },
     "devDependencies": {
         "@tailwindcss/vite": "^4.0.0",
-        "@types/node": "^26.6.2",
+        "@types/node": "^22.15.0",
         "@vitejs/plugin-vue": "^6.0.9",
         "@vue/test-utils": "^2.5.1",
         "@vue/tsconfig": "^0.9.1",
@@ -32,5 +32,8 @@
         "pusher-js": "^8.6.0",
         "vue": "^3.5.43",
         "vue-router": "^5.3.1"
+    },
+    "engines": {
+        "node": ">=22"
     }
 }

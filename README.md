@@ -6,10 +6,10 @@ Speakers submit talk proposals, reviewers rate them, admins decide — and every
 
 | | |
 |---|---|
-| Backend checks | Pint · Larastan level 8 · **186 Pest tests** (incl. a 56-case authorization matrix) |
-| Frontend checks | `vue-tsc` strict · **53 Vitest specs** · production build |
+| Backend checks | Pint · Larastan level 8 · **189 Pest tests** (incl. a 56-case authorization matrix) |
+| Frontend checks | `vue-tsc` strict · **56 Vitest specs** · production build |
 | API docs | OpenAPI 3.1 generated from code at **`/docs/api`** |
-| CI | GitHub Actions runs all of the above, plus `migrate --seed`, on pull requests and pushes to `main` |
+| CI | GitHub Actions runs all of the above, plus `migrate --seed` and a `config:cache` smoke test, on pull requests and pushes to `main` |
 
 ---
 
@@ -82,7 +82,7 @@ All passwords are `password`.
 - Speakers see only their own proposals; reviewers and admins see all.
 - Reviews: rating 1–10 (range in `config/proposals.php`) + comment. One per reviewer per proposal — submitting again updates it.
 - Admins change status.
-- List: pagination, title search, multi-tag filter (match *any*), status filter.
+- List: pagination (`per_page` ≤ 50, `page` ≤ 200), title search, multi-tag filter (match *any*), status filter.
 
 **Bonus**
 - **Real-time** notifications over Laravel Reverb for submitted / reviewed / status-changed, with a persisted notification history (bell + unread count) and live refresh of whatever list or proposal is on screen.
@@ -200,7 +200,7 @@ tests/
 - **No information leaks**: author emails are never exposed (`UserResource` has id + name only); review scores/counts are hidden from users without `reviews.view`; 404s return a generic message (no model names); notification payloads carry no review content.
 - **Open-redirect safe** `?redirect=` handling after login.
 - **No `v-html`** anywhere; all user text is rendered escaped (`white-space: pre-line` keeps paragraphs).
-- **Admin self-registration** is required by the brief but is a privilege-escalation vector. It is behind `ALLOW_ADMIN_REGISTRATION` (default `true` to match the brief) — set it to `false` in any real deployment: the API rejects `role=admin` at sign-up and the SPA stops offering it.
+- **Self-registration is a list, not a free-for-all.** The brief asks for all three roles at sign-up, which is a privilege-escalation vector (a reviewer reads every proposal and every review; an admin decides them). `SELF_REGISTRATION_ROLES` controls it, `.env.example` ships the brief's three, and the config **defaults to `speaker` when the variable is missing**, so a misconfigured deployment fails closed. The API validates against the list and `/api/config` feeds the same list to the sign-up form.
 - **Reverb** only accepts WebSocket connections from `REVERB_ALLOWED_ORIGINS`, and every channel is private.
 
 ## Testing
@@ -233,7 +233,7 @@ Interactive docs: **`/docs/api`** (Scramble; enabled when `APP_ENV=local`). Requ
 
 | Method | Path | Who |
 |---|---|---|
-| GET | `/api/config` | anyone — rating range, upload/tag limits, whether admin sign-up is open |
+| GET | `/api/config` | anyone — rating range, upload/tag limits, roles open for sign-up |
 | POST | `/api/register` | guest |
 | POST | `/api/login` | guest (5/min per email + IP) |
 | POST | `/api/logout` | signed in |
@@ -282,11 +282,12 @@ composer dev        # server + queue worker + Reverb + Vite
 ## Assumptions
 
 - **Rating scale is 1–10** (the brief allows 5 or 10). Change `config/proposals.php` and both the API and the SPA follow — the SPA reads it from `/api/config`.
-- **One role per user**, chosen at registration, not editable in the UI.
+- **One role per user**, chosen at registration from `SELF_REGISTRATION_ROLES`, not editable in the UI.
 - **Reviewers can review any proposal regardless of status**, and can edit their review at any time.
 - **Admins read reviews but don't write them**; reviewers don't change status (straight from the brief's role split).
 - **Tag filter matches *any* of the selected tags.** Tags are filtered by name; the API normalises them to the same case-folded key used for de-duplication.
 - **Speakers can't edit or delete proposals** — not in the brief, so not built.
+- **Statuses have no workflow rules**: an admin can move a proposal back to `pending`. Without a stated lifecycle I kept it open rather than inventing one.
 - **Notification history is per user and never pruned** (would be a scheduled job in production).
 
 ## Trade-offs & what I'd do next

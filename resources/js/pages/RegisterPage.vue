@@ -20,7 +20,9 @@ const allRoles = [
 ] as const;
 
 const config = useConfigStore();
-const roles = computed(() => allRoles.filter((role) => role.value !== Role.Admin || config.settings.allow_admin_registration));
+const roles = computed(() => allRoles.filter((role) => config.settings.registerable_roles.includes(role.value)));
+// Tailwind only ships classes it can see, so the column count is mapped, never interpolated.
+const roleColumns = computed(() => ({ 2: 'sm:grid-cols-2', 3: 'sm:grid-cols-3' })[roles.value.length] ?? '');
 
 const form = useForm({ name: '', email: '', password: '', password_confirmation: '', role: Role.Speaker as Role });
 
@@ -38,7 +40,7 @@ async function submit(): Promise<void> {
         <form class="space-y-5" novalidate @submit.prevent="submit">
             <fieldset>
                 <legend class="text-sm font-medium">I am joining as</legend>
-                <div class="mt-2 grid gap-2" :class="roles.length === 3 ? 'sm:grid-cols-3' : 'sm:grid-cols-2'">
+                <div class="mt-2 grid gap-2" :class="roleColumns">
                     <label v-for="role in roles" :key="role.value" class="relative cursor-pointer">
                         <input v-model="form.data.role" type="radio" name="role" :value="role.value" class="peer sr-only" />
                         <span class="block h-full rounded-xl border border-rule p-3 transition peer-checked:border-ink peer-checked:bg-ink peer-checked:text-card peer-focus-visible:outline-2 peer-focus-visible:outline-signal hover:border-ink">

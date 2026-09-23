@@ -118,15 +118,20 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Admin Self-Registration
+    | Self-Registration
     |--------------------------------------------------------------------------
     |
-    | The challenge requires the admin role to be selectable at sign-up. That
-    | is a privilege-escalation vector in any real system, so it can be
-    | switched off without a code change.
+    | Which roles a visitor may choose for themselves at sign-up. The challenge
+    | asks for all three, which is a privilege-escalation vector in any real
+    | system (a reviewer reads every proposal; an admin decides them), so the
+    | list is configuration and defaults to speaker-only when the env var is
+    | missing. The API and the sign-up form both follow this list.
     |
     */
 
-    'allow_admin_registration' => (bool) env('ALLOW_ADMIN_REGISTRATION', false),
+    'self_registration_roles' => array_values(array_filter(array_map(
+        'trim',
+        explode(',', (string) env('SELF_REGISTRATION_ROLES', 'speaker')),
+    ))),
 
 ];

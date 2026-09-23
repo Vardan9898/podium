@@ -24,17 +24,11 @@ final class RegisterRequest extends FormRequest
     /** @return array<string, ValidationRule|array<mixed>|string> */
     public function rules(): array
     {
-        $role = Rule::enum(Role::class);
-
-        if (! config()->boolean('auth.allow_admin_registration')) {
-            $role->except(Role::Admin);
-        }
-
         return [
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique(User::class)],
             'password' => ['required', 'string', 'confirmed', Password::defaults()],
-            'role' => ['required', $role],
+            'role' => ['required', Rule::enum(Role::class)->only(Role::selfRegisterable())],
         ];
     }
 

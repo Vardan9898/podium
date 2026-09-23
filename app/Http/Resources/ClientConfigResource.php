@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Resources;
 
+use App\Enums\Role;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -16,7 +17,8 @@ final class ClientConfigResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'allow_admin_registration' => config()->boolean('auth.allow_admin_registration'),
+            /** @var list<Role> */
+            'registerable_roles' => Role::selfRegisterable(),
             'rating' => [
                 'min' => config()->integer('proposals.rating.min'),
                 'max' => config()->integer('proposals.rating.max'),

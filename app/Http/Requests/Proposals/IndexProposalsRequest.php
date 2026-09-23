@@ -21,7 +21,7 @@ final class IndexProposalsRequest extends FormRequest
             'tags' => ['nullable', 'array', 'max:'.config()->integer('proposals.tags.max_per_proposal')],
             'tags.*' => ['string', 'max:30'],
             'status' => ['nullable', Rule::enum(ProposalStatus::class)],
-            'page' => ['nullable', 'integer', 'min:1'],
+            'page' => ['nullable', 'integer', 'min:1', 'max:'.config()->integer('proposals.pagination.max_page')],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:'.config()->integer('proposals.pagination.max_per_page')],
         ];
     }

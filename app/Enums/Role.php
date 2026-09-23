@@ -11,6 +11,19 @@ enum Role: string
     case Admin = 'admin';
 
     /**
+     * Roles a visitor may pick for themselves at sign-up (see config/auth.php).
+     *
+     * @return list<self>
+     */
+    public static function selfRegisterable(): array
+    {
+        /** @var list<string> $allowed */
+        $allowed = config()->array('auth.self_registration_roles');
+
+        return array_values(array_filter(self::cases(), fn (self $role): bool => in_array($role->value, $allowed, true)));
+    }
+
+    /**
      * The single source of truth for what each role is allowed to do.
      *
      * @return list<Permission>

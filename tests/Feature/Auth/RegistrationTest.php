@@ -37,14 +37,32 @@ it('stores the email normalised to lower case', function (): void {
         ->assertJsonPath('data.email', 'jane@example.com');
 });
 
-it('blocks admin self-registration when the flag is off', function (): void {
-    config(['auth.allow_admin_registration' => false]);
+it('only allows the roles configured as self-registerable', function (): void {
+    config(['auth.self_registration_roles' => [Role::Speaker->value]]);
 
-    $this->postJson('/api/register', registrationPayload(Role::Admin))
-        ->assertUnprocessable()
-        ->assertJsonValidationErrors('role');
+    foreach ([Role::Admin, Role::Reviewer] as $blocked) {
+        $this->postJson('/api/register', registrationPayload($blocked))
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('role');
+    }
 
-    $this->postJson('/api/register', registrationPayload(Role::Reviewer))->assertCreated();
+    $this->postJson('/api/register', registrationPayload(Role::Speaker))->assertCreated();
+});
+
+it('defaults to speaker-only when the setting is missing', function (): void {
+    config(['auth.self_registration_roles' => config('auth.self_registration_roles')]);
+
+    expect(Role::selfRegisterable())->toBe([Role::Speaker, Role::Reviewer, Role::Admin]);
+
+    config(['auth.self_registration_roles' => []]);
+    expect(Role::selfRegisterable())->toBe([]);
+});
+
+it('advertises the same roles to the sign-up form', function (): void {
+    config(['auth.self_registration_roles' => [Role::Speaker->value, Role::Reviewer->value]]);
+
+    $this->getJson('/api/config')
+        ->assertJsonPath('data.registerable_roles', [Role::Speaker->value, Role::Reviewer->value]);
 });
 
 it('validates registration input', function (array $overrides, string $field): void {

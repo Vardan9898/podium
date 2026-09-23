@@ -76,6 +76,14 @@ jobs:
             - name: Pest
               run: vendor/bin/pest --ci
 
+            # Cheapest guard against env() used outside config/, which only breaks in production.
+            - name: Config cache smoke test
+              run: |
+                  php artisan config:cache
+                  php artisan route:cache
+                  php artisan about --only=environment
+                  php artisan config:clear
+
     frontend:
         name: Frontend (type-check · Vitest · build)
         runs-on: ubuntu-latest

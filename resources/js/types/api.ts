@@ -90,7 +90,7 @@ export interface AppNotification {
 }
 
 export interface ClientConfig {
-    allow_admin_registration: boolean;
+    registerable_roles: Role[];
     rating: { min: number; max: number };
     attachment_max_kilobytes: number;
     tags_max_per_proposal: number;

@@ -28,6 +28,8 @@ return [
     'pagination' => [
         'per_page' => 15,
         'max_per_page' => 50,
+        // Deep offsets scan the whole table for nothing; 200 pages is far past useful.
+        'max_page' => 200,
         'notifications_per_page' => 20,
     ],
 

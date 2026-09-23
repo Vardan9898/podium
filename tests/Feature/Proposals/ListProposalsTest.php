@@ -124,3 +124,12 @@ it('includes review stats and costs the same number of queries whatever the page
         ->assertJsonPath('data.0.average_rating', 5.5)
         ->assertJsonMissingPath('data.0.reviews');
 });
+
+it('refuses absurd page numbers instead of scanning for them', function (): void {
+    $admin = userWithRole(Role::Admin);
+
+    $this->actingAs($admin)->getJson('/api/proposals?page='.(config()->integer('proposals.pagination.max_page') + 1))
+        ->assertJsonValidationErrors('page');
+    $this->actingAs($admin)->getJson('/api/proposals?page=0')->assertJsonValidationErrors('page');
+    $this->actingAs($admin)->getJson('/api/proposals?page=2')->assertOk();
+});
