@@ -2,7 +2,7 @@
 import { timeAgo } from '@/lib/format';
 import { useNotificationStore } from '@/stores/notifications';
 import type { AppNotification } from '@/types/api';
-import { onBeforeUnmount, onMounted, ref, useId } from 'vue';
+import { nextTick, onBeforeUnmount, onMounted, ref, useId, watch } from 'vue';
 import { useRouter } from 'vue-router';
 
 const store = useNotificationStore();
@@ -10,6 +10,7 @@ const router = useRouter();
 const open = ref(false);
 const root = ref<HTMLElement | null>(null);
 const trigger = ref<HTMLButtonElement | null>(null);
+const panel = ref<HTMLElement | null>(null);
 const panelId = useId();
 const headingId = `${panelId}-heading`;
 
@@ -21,11 +22,46 @@ function close({ restoreFocus = false } = {}): void {
     }
 }
 
+const focusable = (): HTMLElement[] =>
+    [...(panel.value?.querySelectorAll<HTMLElement>('a[href], button:not([disabled])') ?? [])];
+
 function onKeydown(event: KeyboardEvent): void {
-    if (event.key === 'Escape' && open.value) {
+    if (!open.value) {
+        return;
+    }
+
+    if (event.key === 'Escape') {
         close({ restoreFocus: true });
+
+        return;
+    }
+
+    // Keep Tab inside the panel while it is open; it overlays the page on small screens.
+    if (event.key === 'Tab') {
+        const items = focusable();
+        const [first] = items;
+        const last = items.at(-1);
+
+        if (!first || !last) {
+            return;
+        }
+
+        if (event.shiftKey && document.activeElement === first) {
+            event.preventDefault();
+            last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+            event.preventDefault();
+            first.focus();
+        }
     }
 }
+
+watch(open, async (isOpen) => {
+    if (isOpen) {
+        await nextTick();
+        focusable()[0]?.focus();
+    }
+});
 
 function openNotification(notification: AppNotification): void {
     close();
@@ -85,7 +121,9 @@ onBeforeUnmount(() => {
             <div
                 v-if="open"
                 :id="panelId"
+                ref="panel"
                 role="dialog"
+                aria-modal="false"
                 :aria-labelledby="headingId"
                 class="fixed inset-x-3 top-16 z-40 overflow-hidden rounded-2xl border border-rule bg-card shadow-[0_24px_60px_-24px_rgb(27_26_23/0.45)] sm:absolute sm:inset-x-auto sm:top-12 sm:right-0 sm:w-96"
             >

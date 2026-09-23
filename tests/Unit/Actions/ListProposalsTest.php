@@ -18,7 +18,7 @@ it('combines search, tag and status filters for the viewer, newest first', funct
 
     $page = app(ListProposals::class)->handle(
         userWithRole(Role::Reviewer),
-        new ProposalFilters(search: 'laravel', tags: [$tag->normalized_name], status: ProposalStatus::Approved, perPage: 10),
+        new ProposalFilters(search: 'laravel', tags: [$tag->normalized_name], status: ProposalStatus::Approved, awaitingMyReview: false, perPage: 10),
     );
 
     expect(collect($page->items())->pluck('id')->all())->toBe([$newer->id, $match->id])

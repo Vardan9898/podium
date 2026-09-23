@@ -28,6 +28,7 @@ function authorizationMatrix(): array
         'logout' => [[], [401, 204, 204, 204]],
         'me' => [[], [401, 200, 200, 200]],
         'proposals.index' => [[], [401, 200, 200, 200]],
+        'proposals.summary' => [[], [401, 200, 200, 200]],
         'proposals.store' => [['title' => 'T', 'description' => 'D'], [401, 201, 403, 403]],
         'proposals.show' => [[], [401, 404, 200, 200]],
         'proposals.attachment' => [[], [401, 404, 200, 200]],

@@ -36,7 +36,7 @@ final class SubmitProposal
                 'description' => $data->description,
             ]);
 
-            $this->storeAttachment($proposal, $data, $disk);
+            $this->addDetails($proposal, $data, $disk);
 
             // Listeners are queued and run after commit, so a notification outage can never undo this write.
             ProposalSubmitted::dispatch($proposal, $author);
@@ -57,10 +57,10 @@ final class SubmitProposal
     }
 
     /**
-     * The file is written inside the transaction; if any later step throws, the row is rolled
-     * back and the file removed, so neither is left without the other.
+     * Attachment and tags, written inside the transaction. If either step throws, the row is
+     * rolled back and any stored file removed, so neither is ever left without the other.
      */
-    private function storeAttachment(Proposal $proposal, ProposalData $data, Filesystem $disk): void
+    private function addDetails(Proposal $proposal, ProposalData $data, Filesystem $disk): void
     {
         $storedPath = null;
 

@@ -1,10 +1,11 @@
-import type { Paginated, Proposal, ProposalStatus, Resource, Review } from '@/types/api';
+import type { Paginated, Proposal, ProposalStatus, ProposalSummary, Resource, Review } from '@/types/api';
 import { http } from './http';
 
 export interface ProposalQuery {
     search?: string;
     tags?: string[];
     status?: ProposalStatus;
+    awaiting_review?: 1;
     page?: number;
     per_page?: number;
 }
@@ -20,6 +21,12 @@ export async function listProposals(query: ProposalQuery, signal?: AbortSignal):
     const { data } = await http.get<Paginated<Proposal>>('/proposals', { params: query, signal });
 
     return data;
+}
+
+export async function getProposalSummary(signal?: AbortSignal): Promise<ProposalSummary> {
+    const { data } = await http.get<Resource<ProposalSummary>>('/proposals/summary', { signal });
+
+    return data.data;
 }
 
 export async function getProposal(id: number, signal?: AbortSignal): Promise<Proposal> {

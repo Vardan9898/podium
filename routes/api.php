@@ -11,6 +11,7 @@ use App\Http\Controllers\Proposals\ProposalAttachmentController;
 use App\Http\Controllers\Proposals\ProposalController;
 use App\Http\Controllers\Proposals\ProposalReviewController;
 use App\Http\Controllers\Proposals\ProposalStatusController;
+use App\Http\Controllers\Proposals\ProposalSummaryController;
 use App\Http\Controllers\TagController;
 use App\Models\Proposal;
 use Illuminate\Support\Facades\Route;
@@ -22,10 +23,16 @@ Route::middleware('guest')->group(function (): void {
     Route::post('login', [SessionController::class, 'store'])->middleware('throttle:login')->name('login');
 });
 
+// Proposal ids are numeric, so no sibling path (e.g. /proposals/summary) can be read as one.
+Route::pattern('proposal', '[0-9]+');
+
 Route::middleware('auth:sanctum')->group(function (): void {
     Route::post('logout', [SessionController::class, 'destroy'])->name('logout');
     Route::get('me', CurrentUserController::class)->name('me');
 
+    Route::get('proposals/summary', ProposalSummaryController::class)
+        ->can('viewAny', Proposal::class)
+        ->name('proposals.summary');
     Route::get('proposals', [ProposalController::class, 'index'])
         ->can('viewAny', Proposal::class)
         ->name('proposals.index');

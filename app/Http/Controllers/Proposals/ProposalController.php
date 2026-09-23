@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Proposals;
 
 use App\Actions\Proposals\ListProposals;
+use App\Actions\Proposals\ShowProposal;
 use App\Actions\Proposals\SubmitProposal;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Proposals\IndexProposalsRequest;
@@ -15,7 +16,6 @@ use App\Models\User;
 use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
-use Illuminate\Support\Facades\Gate;
 
 final class ProposalController extends Controller
 {
@@ -56,10 +56,8 @@ final class ProposalController extends Controller
      *
      * `reviews` is only included for users allowed to read reviews.
      */
-    public function show(Proposal $proposal): ProposalResource
+    public function show(#[CurrentUser] User $user, Proposal $proposal, ShowProposal $showProposal): ProposalResource
     {
-        return new ProposalResource($proposal->loadDetails(
-            withReviews: Gate::allows('viewReviews', $proposal),
-        ));
+        return new ProposalResource($showProposal->handle($user, $proposal));
     }
 }

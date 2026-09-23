@@ -15,6 +15,8 @@ final readonly class ProposalFilters
         public ?string $search,
         public array $tags,
         public ?ProposalStatus $status,
+        /** Reviewers only: limit to proposals they have not reviewed yet. */
+        public bool $awaitingMyReview,
         public int $perPage,
     ) {}
 }

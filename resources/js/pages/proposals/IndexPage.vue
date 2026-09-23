@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { isAbort, messageOf } from '@/api/http';
-import { listProposals } from '@/api/proposals';
+import { getProposalSummary, listProposals } from '@/api/proposals';
+import DashboardStrip from '@/components/DashboardStrip.vue';
 import ProposalFilters, { type Filters } from '@/components/ProposalFilters.vue';
 import ProposalList from '@/components/ProposalList.vue';
 import AppButton from '@/components/ui/AppButton.vue';
@@ -9,7 +10,7 @@ import PaginationNav from '@/components/ui/PaginationNav.vue';
 import { useCan } from '@/composables/useCan';
 import { parseListQuery, toApiQuery, toLocationQuery } from '@/lib/query';
 import { useNotificationStore } from '@/stores/notifications';
-import { Permission, type Paginated, type Proposal } from '@/types/api';
+import { Permission, type Paginated, type Proposal, type ProposalStatus, type ProposalSummary } from '@/types/api';
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
@@ -20,18 +21,30 @@ const canSubmit = useCan(Permission.CreateProposals);
 const seesEverything = useCan(Permission.ViewAnyProposals);
 
 const result = ref<Paginated<Proposal> | null>(null);
+const summary = ref<ProposalSummary | null>(null);
 const loading = ref(true);
 const error = ref<string | null>(null);
 let controller: AbortController | undefined;
 
 // The URL is the single source of truth for filters and page.
 const state = computed(() => parseListQuery(route.query));
-const isFiltered = computed(() => state.value.search !== '' || state.value.tags.length > 0 || state.value.status !== '');
+const isFiltered = computed(
+    () => state.value.search !== '' || state.value.tags.length > 0 || state.value.status !== '' || state.value.awaitingReview,
+);
 
 const filters = computed<Filters>({
     get: () => ({ search: state.value.search, tags: state.value.tags, status: state.value.status }),
-    set: (next) => void router.replace({ query: toLocationQuery({ ...next, page: 1 }) }),
+    set: (next) => void router.replace({ query: toLocationQuery({ ...state.value, ...next, page: 1 }) }),
 });
+
+/** The strip filters the same list, so it writes to the same URL. */
+function apply(change: Partial<{ status: ProposalStatus | ''; awaitingReview: boolean }>): void {
+    void router.push({ query: toLocationQuery({ ...state.value, ...change, page: 1 }) });
+}
+
+function clearFilters(): void {
+    void router.push({ query: {} });
+}
 
 function goToPage(page: number): void {
     void router.push({ query: toLocationQuery({ ...state.value, page }) });
@@ -47,7 +60,9 @@ async function load({ quiet = false } = {}): Promise<void> {
     error.value = null;
 
     try {
-        result.value = await listProposals(toApiQuery(state.value), signal);
+        const [page, counts] = await Promise.all([listProposals(toApiQuery(state.value), signal), getProposalSummary(signal)]);
+        result.value = page;
+        summary.value = counts;
     } catch (e: unknown) {
         if (!isAbort(e)) {
             error.value = messageOf(e, 'We could not load proposals.');
@@ -83,6 +98,14 @@ onBeforeUnmount(() => controller?.abort());
             <p v-if="result" class="font-mono text-sm text-ink-faint">{{ result.meta.total }} {{ result.meta.total === 1 ? 'talk' : 'talks' }}</p>
         </header>
 
+        <DashboardStrip
+            :summary="summary"
+            :status="state.status"
+            :awaiting-review="state.awaitingReview"
+            @status="apply({ status: $event })"
+            @awaiting="apply({ awaitingReview: $event })"
+        />
+
         <ProposalFilters v-model="filters" />
 
         <div v-if="loading" class="space-y-px overflow-hidden rounded-2xl border border-rule bg-card" aria-busy="true" aria-label="Loading proposals">
@@ -102,7 +125,7 @@ onBeforeUnmount(() => controller?.abort());
             :title="isFiltered ? 'No proposals match these filters.' : 'No proposals yet.'"
             :body="isFiltered ? 'Try a different search or remove a filter.' : canSubmit ? 'Your first talk is one form away.' : 'New submissions will appear here — live.'"
         >
-            <AppButton v-if="isFiltered" variant="secondary" @click="filters = { search: '', tags: [], status: '' }">Clear filters</AppButton>
+            <AppButton v-if="isFiltered" variant="secondary" @click="clearFilters">Clear filters</AppButton>
             <AppButton v-else-if="canSubmit" :to="{ name: 'proposals.create' }">Submit a proposal</AppButton>
         </EmptyState>
 

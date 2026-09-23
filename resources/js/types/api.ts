@@ -73,6 +73,12 @@ export interface Proposal {
     updated_at: string;
 }
 
+export interface ProposalSummary {
+    total: number;
+    by_status: Record<ProposalStatus, number>;
+    awaiting_my_review: number | null;
+}
+
 export interface ActivityPayload {
     type: ActivityType;
     proposal_id: number;

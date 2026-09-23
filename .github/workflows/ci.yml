@@ -84,6 +84,56 @@ jobs:
                   php artisan about --only=environment
                   php artisan config:clear
 
+    search:
+        name: Search (Meilisearch engine)
+        runs-on: ubuntu-latest
+
+        services:
+            postgres:
+                image: postgres:18-alpine
+                env:
+                    POSTGRES_DB: testing
+                    POSTGRES_USER: sail
+                    POSTGRES_PASSWORD: password
+                ports: ['5432:5432']
+                options: >-
+                    --health-cmd "pg_isready -U sail -d testing"
+                    --health-interval 5s --health-timeout 5s --health-retries 10
+
+            meilisearch:
+                image: getmeili/meilisearch:latest
+                ports: ['7700:7700']
+                env:
+                    MEILI_NO_ANALYTICS: 'true'
+                options: >-
+                    --health-cmd "curl -sf http://localhost:7700/health"
+                    --health-interval 5s --health-timeout 5s --health-retries 10
+
+        env:
+            DB_HOST: 127.0.0.1
+            SCOUT_DRIVER: meilisearch
+            MEILISEARCH_HOST: http://127.0.0.1:7700
+
+        steps:
+            - uses: actions/checkout@v4
+
+            - uses: shivammathur/setup-php@v2
+              with:
+                  php-version: '8.4'
+                  extensions: pdo_pgsql, fileinfo, intl
+                  coverage: none
+
+            - run: composer install --no-interaction --prefer-dist --no-progress
+
+            - name: Prepare environment
+              run: |
+                  cp .env.example .env
+                  php artisan key:generate
+
+            # Proves the documented Meilisearch swap really works, not just the database engine.
+            - name: Pest (Meilisearch group)
+              run: vendor/bin/pest --group=meilisearch --ci
+
     frontend:
         name: Frontend (type-check · Vitest · build)
         runs-on: ubuntu-latest
@@ -100,3 +150,10 @@ jobs:
             - run: npm run type-check
             - run: npm test
             - run: npm run build
+
+            - name: Upload build output
+              uses: actions/upload-artifact@v4
+              with:
+                  name: spa-build
+                  path: public/build
+                  retention-days: 7

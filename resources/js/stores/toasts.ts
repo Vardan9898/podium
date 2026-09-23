@@ -42,7 +42,12 @@ export const useToastStore = defineStore('toasts', () => {
         const overflow = toasts.value.length - (MAX_VISIBLE - 1);
         toasts.value.slice(0, Math.max(0, overflow)).forEach((old) => dismiss(old.id));
         toasts.value = [...toasts.value, { ...toast, id }];
-        release(id);
+
+        // A toast with a link is actionable: leave it until it is dismissed or pushed out,
+        // otherwise a keyboard user can never reach the link in time.
+        if (toast.to === undefined) {
+            release(id);
+        }
     }
 
     function clear(): void {

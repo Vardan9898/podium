@@ -6,8 +6,8 @@ Speakers submit talk proposals, reviewers rate them, admins decide — and every
 
 | | |
 |---|---|
-| Backend checks | Pint · Larastan level 8 · **189 Pest tests** (incl. a 56-case authorization matrix) |
-| Frontend checks | `vue-tsc` strict · **56 Vitest specs** · production build |
+| Backend checks | Pint · Larastan level 8 · **205 Pest tests** (incl. a 56-case authorization matrix and 2 against a real Meilisearch) |
+| Frontend checks | `vue-tsc` strict · **61 Vitest specs** · production build |
 | API docs | OpenAPI 3.1 generated from code at **`/docs/api`** |
 | CI | GitHub Actions runs all of the above, plus `migrate --seed` and a `config:cache` smoke test, on pull requests and pushes to `main` |
 
@@ -74,6 +74,10 @@ All passwords are `password`.
 | `admin@example.com` | Admin | see all proposals and reviews, approve / reject |
 
 ## Features
+
+**Dashboard**
+- One list for everyone, with counts on top that change per role: a speaker sees their own proposals by status, a reviewer and an admin see the whole programme. Every tile filters the list below it, and the filter lives in the URL.
+- Reviewers also get **"Awaiting your review"** — the proposals they have not rated yet — as a count and a one-click filter (`?awaiting_review=1`). Two aggregate queries, no extra listing.
 
 **Core**
 - Registration with role choice, login, logout (Sanctum SPA cookie sessions, no tokens in JS).
@@ -222,7 +226,8 @@ What's covered:
 - **Reviews**: upsert (second submit updates, no duplicate), rating bounds read from config.
 - **Status**: event dispatched; no-op and no event when unchanged.
 - **Config**: `/api/config` reflects server config.
-- **Search**: Scout title search with the `database` and `collection` engines, filters and pagination counts unchanged, wildcards literal, only the title indexed.
+- **Search**: Scout title search with the `database` and `collection` engines, filters and pagination counts unchanged, wildcards literal, only the title indexed. A separate CI job runs the suite's `meilisearch` group against a real Meilisearch service, so the documented engine swap is proven rather than assumed.
+- **Dashboard**: summary counts scoped per role, the reviewer queue filter (including the query-string spellings of its flag), and that it is ignored for users who do not review.
 - **Notifications**: exact recipients per event with the actor excluded, reviewer anonymity towards authors, no notifications for no-op edits, payload shape, private channel name, list / mark-read endpoints, channel authorisation.
 - **Unit**: tag normalisation and every Action (incl. file cleanup when the transaction fails). These touch the database on purpose — they exercise each Action against real Postgres behaviour (unique indexes, locking) rather than mocks.
 - **Vitest**: `useForm` 422 mapping, `TagInput` behaviour, router guard redirects + open-redirect protection, URL query parsing, auth store session loading/retry, toast lifecycle.
@@ -238,7 +243,8 @@ Interactive docs: **`/docs/api`** (Scramble; enabled when `APP_ENV=local`). Requ
 | POST | `/api/login` | guest (5/min per email + IP) |
 | POST | `/api/logout` | signed in |
 | GET | `/api/me` | signed in — user, role, permissions |
-| GET | `/api/proposals?search=&tags[]=&status=&page=&per_page=` | signed in (scoped to visibility) |
+| GET | `/api/proposals?search=&tags[]=&status=&awaiting_review=&page=&per_page=` | signed in (scoped to visibility) |
+| GET | `/api/proposals/summary` | signed in — counts by status, plus your review queue |
 | POST | `/api/proposals` (multipart) | `proposals.create` |
 | GET | `/api/proposals/{id}` | owner or `proposals.view-any` |
 | GET | `/api/proposals/{id}/attachment` | same as above |
@@ -265,6 +271,8 @@ COMPOSE_PROFILES=meilisearch ./vendor/bin/sail up -d
 ```
 
 New and edited proposals are indexed automatically from then on. Only the title is indexed.
+
+The `meilisearch` test group runs against a real engine (locally it skips when none is reachable; CI provides one), covering typo tolerance, visibility, filters and index updates.
 
 ## Running without Docker
 

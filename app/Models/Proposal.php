@@ -170,6 +170,17 @@ final class Proposal extends Model
         $query->whereHas('tags', fn (Builder $tags) => $tags->whereIn('normalized_name', $keys));
     }
 
+    /**
+     * A reviewer's queue: everything they have not reviewed yet.
+     *
+     * @param  Builder<self>  $query
+     */
+    #[Scope]
+    protected function awaitingReviewBy(Builder $query, User $reviewer): void
+    {
+        $query->whereDoesntHave('reviews', fn (Builder $reviews) => $reviews->whereBelongsTo($reviewer, 'author'));
+    }
+
     /** @param  Builder<self>  $query */
     #[Scope]
     protected function status(Builder $query, ?ProposalStatus $status): void

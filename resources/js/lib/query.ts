@@ -8,6 +8,7 @@ export interface ListState {
     search: string;
     tags: string[];
     status: ProposalStatus | '';
+    awaitingReview: boolean;
     page: number;
 }
 
@@ -25,6 +26,7 @@ export function parseListQuery(query: LocationQuery): ListState {
         search: first(query.search),
         tags: all(query.tags),
         status: STATUSES.includes(status) ? (status as ProposalStatus) : '',
+        awaitingReview: first(query.awaiting_review) === '1',
         page: Number.isInteger(page) && page > 0 ? page : 1,
     };
 }
@@ -35,6 +37,7 @@ export function toLocationQuery(state: ListState): LocationQueryRaw {
         ...(state.search ? { search: state.search } : {}),
         ...(state.tags.length ? { tags: state.tags } : {}),
         ...(state.status ? { status: state.status } : {}),
+        ...(state.awaitingReview ? { awaiting_review: '1' } : {}),
         ...(state.page > 1 ? { page: String(state.page) } : {}),
     };
 }
@@ -44,6 +47,8 @@ export function toApiQuery(state: ListState): ProposalQuery {
         search: state.search || undefined,
         tags: state.tags.length ? state.tags : undefined,
         status: state.status || undefined,
+        // 1/undefined: Laravel's boolean rule does not accept the string "true".
+        awaiting_review: state.awaitingReview ? 1 : undefined,
         page: state.page,
     };
 }
