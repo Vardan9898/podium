@@ -32,7 +32,10 @@ services:
                 WWWGROUP: '${WWWGROUP}'
         image: 'sail-8.4/app'
         restart: unless-stopped
-        command: ['php', '/var/www/html/artisan', 'queue:listen', 'redis', '--tries=3', '--timeout=60']
+        # queue:work keeps one worker alive, so notifications land in well under a second.
+        # It holds code in memory: after changing a job, listener or notification run
+        # `sail restart queue`.
+        command: ['php', '/var/www/html/artisan', 'queue:work', 'redis', '--tries=3', '--timeout=60', '--sleep=0.5']
         environment:
             WWWUSER: '${WWWUSER}'
             LARAVEL_SAIL: 1

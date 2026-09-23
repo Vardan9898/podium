@@ -49,7 +49,7 @@ docker run --rm -u "$(id -u):$(id -g)" -v "$(pwd):/var/www/html" -w /var/www/htm
 
 Open **http://localhost** · API docs at **http://localhost/docs/api**.
 
-`sail up` starts the queue worker and Reverb as their own services, so live notifications work immediately. For frontend hot reload use `./vendor/bin/sail npm run dev` instead of `build`.
+`sail up` starts the queue worker and Reverb as their own services, so live notifications work immediately. For frontend hot reload use `./vendor/bin/sail npm run dev` instead of `build`. The worker keeps PHP in memory for speed — after editing a job, listener or notification, run `./vendor/bin/sail restart queue`.
 
 > **Port already in use?** If something on your machine already listens on 80, 5432, 6379 or 8080 (a local nginx/Valet, Postgres, Redis…), add overrides to `.env` before `sail up`, e.g.:
 > ```dotenv
