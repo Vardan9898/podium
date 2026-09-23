@@ -26,8 +26,17 @@ jobs:
                     --health-cmd "pg_isready -U sail -d testing"
                     --health-interval 5s --health-timeout 5s --health-retries 10
 
+            # .env.example uses Redis for cache/queue/session, so the seed step needs one.
+            redis:
+                image: redis:alpine
+                ports: ['6379:6379']
+                options: >-
+                    --health-cmd "redis-cli ping"
+                    --health-interval 5s --health-timeout 5s --health-retries 10
+
         env:
             DB_HOST: 127.0.0.1
+            REDIS_HOST: 127.0.0.1
 
         steps:
             - uses: actions/checkout@v4

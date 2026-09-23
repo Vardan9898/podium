@@ -1,4 +1,4 @@
-import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios';
+import axios, { type InternalAxiosRequestConfig } from 'axios';
 
 type RetriableConfig = InternalAxiosRequestConfig & { _csrfRetried?: boolean };
 
