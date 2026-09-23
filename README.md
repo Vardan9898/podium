@@ -13,6 +13,26 @@ Speakers submit talk proposals, reviewers rate them, admins decide — and every
 
 ---
 
+## For the reviewer
+
+**Five minutes:** run the [Quick start](#quick-start-sail), open http://localhost, sign in as
+`reviewer@example.com` / `password`, and submit a proposal as `speaker@example.com` in a private
+window — the reviewer's screen updates live, with no reload.
+
+**If you only read four files**, I would pick these:
+
+| File | Why |
+|---|---|
+| [`app/Policies/ProposalPolicy.php`](app/Policies/ProposalPolicy.php) | the whole authorization model: permissions only, and "invisible" means 404 |
+| [`app/Actions/Proposals/SubmitProposal.php`](app/Actions/Proposals/SubmitProposal.php) | the shape every write follows: DTO in, one transaction, event after commit |
+| [`app/Models/Proposal.php`](app/Models/Proposal.php) | the query scopes the list is composed from, incl. `visibleTo()` |
+| [`tests/Feature/AuthorizationMatrixTest.php`](tests/Feature/AuthorizationMatrixTest.php) | every endpoint × every role, and a guard that fails if a route is added without a row |
+
+**Companion docs:** [requirements coverage](docs/REQUIREMENTS.md) (every line of the brief → code → test)
+and [decisions](docs/DECISIONS.md) (the choices worth arguing about, and what each cost).
+
+---
+
 ## Contents
 
 1. [Quick start (Sail)](#quick-start-sail)
@@ -24,8 +44,9 @@ Speakers submit talk proposals, reviewers rate them, admins decide — and every
 7. [API](#api)
 8. [Switching search to Meilisearch](#switching-search-to-meilisearch)
 9. [Running without Docker](#running-without-docker)
-10. [Assumptions](#assumptions)
-11. [Trade-offs & what I'd do next](#trade-offs--what-id-do-next)
+10. [Deploying](#deploying)
+11. [Assumptions](#assumptions)
+12. [Trade-offs & what I'd do next](#trade-offs--what-id-do-next)
 
 ---
 
@@ -220,7 +241,7 @@ tests/
 Or everything backend in one go: `composer check`.
 
 What's covered:
-- **Auth**: register per role, admin registration blocked when the flag is off, validation, login, throttling, logout, `/me`, JSON 401/403 for API clients.
+- **Auth**: register per role, roles outside `SELF_REGISTRATION_ROLES` rejected (and everything rejected when the list is empty), validation, login, case-insensitive email, throttling, logout, `/me`, JSON 401/403 for API clients.
 - **Authorization matrix**: every endpoint × every role, plus a route-coverage guard.
 - **Proposals**: create with/without tags and file, tag reuse, every validation rule (incl. non-PDF, disguised image, > 4 MB, padded/duplicate tags), default status, visibility in list + show + attachment (404 for others' proposals, 404 for files missing on disk), search (case-insensitive, `%`/`_` treated literally), multi-tag filter, status filter, pagination bounds, review stats without N+1.
 - **Reviews**: upsert (second submit updates, no duplicate), rating bounds read from config.
@@ -286,6 +307,44 @@ createdb talk_proposals && createdb testing
 composer setup      # install, key, migrate --seed, npm install, build
 composer dev        # server + queue worker + Reverb + Vite
 ```
+
+## Deploying
+
+The app is a standard Laravel deployment plus two long-running processes. On a fresh host:
+
+```bash
+composer install --no-dev --optimize-autoloader
+npm ci && npm run build                 # compiled assets into public/build
+php artisan migrate --force
+php artisan db:seed --class=RolesAndPermissionsSeeder --force   # idempotent; safe on every deploy
+php artisan config:cache && php artisan route:cache && php artisan view:cache
+```
+
+Run these as services (Supervisor, systemd, Forge daemons…):
+
+```bash
+php artisan queue:work redis --tries=3 --timeout=60   # notifications; restart on deploy
+php artisan reverb:start --host=0.0.0.0 --port=8080   # WebSockets, behind TLS
+```
+
+Environment for production — the defaults in `.env.example` are development ones:
+
+| Setting | Production value |
+|---|---|
+| `APP_ENV` / `APP_DEBUG` | `production` / `false` (this also hides `/docs/api`) |
+| `APP_URL` | the real HTTPS origin; Sanctum trusts it for SPA cookies |
+| `SESSION_SECURE_COOKIE` | `true` |
+| `SELF_REGISTRATION_ROLES` | `speaker` — do not let visitors make themselves reviewers or admins |
+| `REVERB_ALLOWED_ORIGINS` | your domain, not `*` |
+| `REVERB_SCHEME` / `VITE_REVERB_*` | `https` / `wss` values matching the public WebSocket URL (rebuild assets after changing these) |
+| `FILESYSTEM_DISK` | keep `local` (private) or move to S3 — attachments must never be publicly readable |
+
+Deploy checklist: `php artisan queue:restart` after deploying changed job code, `php artisan
+optimize:clear` if you cache config in a container image, and keep the queue worker's `--timeout`
+below `config('queue.connections.redis.retry_after')` (60 < 90 here).
+
+Zero-downtime deploys (Envoyer, Forge) need nothing special: migrations are additive and the SPA
+is a static build.
 
 ## Assumptions
 
