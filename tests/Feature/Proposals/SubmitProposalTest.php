@@ -68,6 +68,37 @@ it('stores a real PDF attachment on the private disk', function (): void {
     $response->assertJsonPath('data.attachment.url', "/api/proposals/{$proposal->id}/attachment");
 });
 
+it('keeps hostile file names usable instead of failing later', function (string $clientName, string $expected): void {
+    $pdf = (string) file_get_contents(database_path('seeders/files/sample-proposal.pdf'));
+
+    $this->actingAs($this->speaker)->post('/api/proposals', [
+        'title' => 'Name handling',
+        'description' => 'Body',
+        'attachment' => realUpload($pdf, $clientName),
+    ], ['Accept' => 'application/json'])->assertCreated();
+
+    $proposal = Proposal::query()->sole();
+    expect($proposal->attachment_original_name)->toBe($expected)
+        ->and(mb_strlen((string) $proposal->attachment_original_name))->toBeLessThanOrEqual(255);
+
+    // The name is also used as a Content-Disposition filename, which needs an ASCII fallback.
+    $this->actingAs($this->speaker)->get("/api/proposals/{$proposal->id}/attachment")->assertOk();
+})->with([
+    'over-long name' => [str_repeat('a', 300).'.pdf', str_repeat('a', 200).'.pdf'],
+    'name with no ASCII at all' => ['🎉.pdf', 'proposal.pdf'],
+    'ordinary name' => ['slides.pdf', 'slides.pdf'],
+]);
+
+it('accepts tags whose case-folded key is longer than the tag itself', function (): void {
+    $this->actingAs($this->speaker)->postJson('/api/proposals', [
+        'title' => 'Unicode tags',
+        'description' => 'Body',
+        'tags' => [str_repeat('İ', 30)],
+    ])->assertCreated();
+
+    expect(Tag::query()->sole()->normalized_name)->toBe(mb_strtolower(str_repeat('İ', 30)));
+});
+
 it('rejects invalid submissions', function (array $payload, string $field): void {
     $this->actingAs($this->speaker)
         ->post('/api/proposals', ['title' => 'T', 'description' => 'D', ...$payload], ['Accept' => 'application/json'])

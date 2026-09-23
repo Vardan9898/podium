@@ -61,8 +61,15 @@ it('validates the review payload', function (array $payload, string $field): voi
     'comment too long' => [['rating' => 5, 'comment' => str_repeat('a', 2001)], 'comment'],
 ]);
 
-it('forbids users without the review permission', function (Role $role): void {
-    $this->actingAs(userWithRole($role))
+it('forbids admins, who may read reviews but not write them', function (): void {
+    $this->actingAs(userWithRole(Role::Admin))
         ->putJson("/api/proposals/{$this->proposal->id}/review", ['rating' => 5, 'comment' => 'x'])
         ->assertForbidden();
-})->with([Role::Speaker, Role::Admin]);
+});
+
+it('answers speakers who cannot see the proposal with 404, not 403', function (): void {
+    $this->actingAs(userWithRole(Role::Speaker))
+        ->putJson("/api/proposals/{$this->proposal->id}/review", ['rating' => 5, 'comment' => 'x'])
+        ->assertNotFound()
+        ->assertExactJson(['message' => 'Not found.']);
+});

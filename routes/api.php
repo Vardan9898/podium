@@ -29,15 +29,21 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::get('proposals', [ProposalController::class, 'index'])
         ->can('viewAny', Proposal::class)
         ->name('proposals.index');
-    Route::post('proposals', [ProposalController::class, 'store'])->name('proposals.store');
+    Route::post('proposals', [ProposalController::class, 'store'])
+        ->can('create', Proposal::class)
+        ->name('proposals.store');
     Route::get('proposals/{proposal}', [ProposalController::class, 'show'])
         ->can('view', 'proposal')
         ->name('proposals.show');
     Route::get('proposals/{proposal}/attachment', ProposalAttachmentController::class)
         ->can('downloadAttachment', 'proposal')
         ->name('proposals.attachment');
-    Route::patch('proposals/{proposal}/status', ProposalStatusController::class)->name('proposals.status');
-    Route::put('proposals/{proposal}/review', ProposalReviewController::class)->name('proposals.review');
+    Route::patch('proposals/{proposal}/status', ProposalStatusController::class)
+        ->can('changeStatus', 'proposal')
+        ->name('proposals.status');
+    Route::put('proposals/{proposal}/review', ProposalReviewController::class)
+        ->can('review', 'proposal')
+        ->name('proposals.review');
 
     Route::get('tags', TagController::class)->name('tags.index');
 

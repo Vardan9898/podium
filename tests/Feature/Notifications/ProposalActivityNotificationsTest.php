@@ -13,7 +13,6 @@ use App\Enums\Role;
 use App\Models\Proposal;
 use App\Models\Review;
 use App\Notifications\ProposalActivityNotification;
-use Illuminate\Notifications\Events\BroadcastNotificationCreated;
 use Illuminate\Support\Facades\Notification;
 
 beforeEach(function (): void {
@@ -97,6 +96,23 @@ it('notifies the author and the reviewers of that proposal on a status change, n
     );
 });
 
+it('reports the transition it actually made, even when the row changes again', function (): void {
+    $proposal = Proposal::factory()->for($this->speaker, 'author')->create();
+    $action = app(ChangeProposalStatus::class);
+
+    $action->handle($this->admin, $proposal, ProposalStatus::Approved);
+    $action->handle($this->admin, $proposal, ProposalStatus::Rejected);
+
+    $messages = [];
+    Notification::assertSentTo($this->speaker, ProposalActivityNotification::class, function (ProposalActivityNotification $n) use (&$messages): bool {
+        $messages[] = $n->activity->message;
+
+        return true;
+    });
+
+    expect($messages)->toBe(['Status changed from pending to approved.', 'Status changed from approved to rejected.']);
+});
+
 it('sends nothing when the status does not actually change', function (): void {
     $proposal = Proposal::factory()->approved()->for($this->speaker, 'author')->create();
 
@@ -113,8 +129,8 @@ it('stores and broadcasts a minimal payload on the user\'s private channel', fun
         $payload = $n->toArray($this->speaker);
 
         expect($channels)->toBe(['database', 'broadcast'])
-            ->and((new BroadcastNotificationCreated($this->speaker, $n, $payload))->broadcastOn()[0]->name)
-            ->toBe("private-App.Models.User.{$this->speaker->id}")
+            ->and($n->toBroadcast($this->speaker)->data)->toBe($payload)
+            ->and($n->broadcastType())->toBe(ProposalActivityType::Reviewed->value)
             ->and(array_keys($payload))->toBe(['type', 'proposal_id', 'proposal_title', 'message', 'actor_name'])
             ->and($payload['proposal_id'])->toBe($proposal->id)
             ->and(json_encode($payload))->not->toContain('Secret reviewer comment');

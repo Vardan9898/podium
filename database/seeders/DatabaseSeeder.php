@@ -26,13 +26,22 @@ final class DatabaseSeeder extends Seeder
         $speakers = User::factory()->count(3)->speaker()->create()->prepend($speaker);
         $reviewers = User::factory()->count(2)->reviewer()->create()->prepend($reviewer);
 
+        if (Proposal::query()->exists()) {
+            $this->command->info('Demo proposals already present — roles and demo users refreshed, nothing else added.');
+
+            return;
+        }
+
         /** @var list<array{0: string, 1: string, 2: list<string>}> $talks */
         $talks = require __DIR__.'/data/talks.php';
         /** @var list<string> $comments */
         $comments = require __DIR__.'/data/review-comments.php';
 
         $tags = collect($talks)->pluck(2)->flatten()->unique()
-            ->mapWithKeys(fn (string $name): array => [$name => Tag::factory()->named($name)->create()]);
+            ->mapWithKeys(fn (string $name): array => [$name => Tag::query()->firstOrCreate(
+                ['normalized_name' => Tag::keyFor($name)],
+                ['name' => Tag::normalizeName($name)],
+            )]);
 
         $statuses = ProposalStatus::cases();
 
@@ -57,9 +66,18 @@ final class DatabaseSeeder extends Seeder
         $this->attachSamplePdf($speaker);
     }
 
+    /** Idempotent: `db:seed` on an already-seeded database updates instead of colliding. */
     private function demoUser(string $name, string $email, Role $role): User
     {
-        return User::factory()->withRole($role)->create(['name' => $name, 'email' => $email]);
+        $user = User::query()->firstOrNew(['email' => $email]);
+
+        if (! $user->exists) {
+            $user = User::factory()->create(['name' => $name, 'email' => $email]);
+        }
+
+        $user->syncRoles([$role]);
+
+        return $user;
     }
 
     private function attachSamplePdf(User $speaker): void

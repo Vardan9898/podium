@@ -27,7 +27,7 @@ export async function authGuard(to: RouteLocationNormalized, auth: AuthState): P
     await auth.ensureLoaded();
 
     if (to.meta.guestOnly && auth.isAuthenticated) {
-        return HOME;
+        return safeRedirect(to.query.redirect) ?? HOME;
     }
 
     if (to.meta.requiresAuth && !auth.isAuthenticated) {

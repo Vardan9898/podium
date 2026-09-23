@@ -7,6 +7,7 @@ use App\Enums\Role;
 use App\Models\Proposal;
 use App\Models\Review;
 use App\Models\Tag;
+use Illuminate\Support\Facades\DB;
 
 it('shows speakers only their own proposals', function (): void {
     $speaker = userWithRole(Role::Speaker);
@@ -60,6 +61,15 @@ it('filters by any of several tags, matched by name case-insensitively', functio
     expect($response->json('data.*.id'))->toEqualCanonicalizing([$a->id, $b->id]);
 });
 
+it('treats a search for "0" as a real term, not an empty filter', function (): void {
+    Proposal::factory()->create(['title' => 'From 0 to 60 with Laravel']);
+    Proposal::factory()->count(2)->create(['title' => 'Something else']);
+
+    $this->actingAs(userWithRole(Role::Reviewer))->getJson('/api/proposals?search=0')
+        ->assertJsonPath('meta.total', 1)
+        ->assertJsonPath('data.0.title', 'From 0 to 60 with Laravel');
+});
+
 it('filters by status', function (): void {
     Proposal::factory()->approved()->count(2)->create();
     Proposal::factory()->rejected()->create();
@@ -86,16 +96,31 @@ it('paginates within bounds', function (): void {
     $this->actingAs($admin)->getJson('/api/proposals?status=archived')->assertJsonValidationErrors('status');
 });
 
-it('includes review stats without N+1 queries', function (): void {
-    $proposal = Proposal::factory()->withTags(2)->create();
+it('includes review stats and costs the same number of queries whatever the page holds', function (): void {
+    $proposal = Proposal::factory()->withTags(2)->create(['title' => 'Stats subject']);
     Review::factory()->for($proposal)->create(['rating' => 4]);
     Review::factory()->for($proposal)->create(['rating' => 7]);
-    Proposal::factory()->count(5)->withTags(2)->create();
+    $reviewer = userWithRole(Role::Reviewer);
 
-    // Strict mode (Model::shouldBeStrict) turns any lazy load into an exception.
-    $this->actingAs(userWithRole(Role::Reviewer))->getJson('/api/proposals')
-        ->assertOk()
-        ->assertJsonPath('data.5.reviews_count', 2)
-        ->assertJsonPath('data.5.average_rating', 5.5)
+    $countQueries = function () use ($reviewer): int {
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+        $this->actingAs($reviewer)->getJson('/api/proposals')->assertOk();
+
+        return count(DB::getQueryLog());
+    };
+
+    $countQueries();          // warm-up: the first request also loads and caches permissions
+    $withOne = $countQueries();
+
+    Proposal::factory()->count(19)->withTags(2)->hasReviews(2)->create();
+    $withTwenty = $countQueries();
+
+    // Constant, not proportional: eager loading + aggregates, no per-proposal query.
+    expect($withTwenty)->toBe($withOne)->toBeLessThan(8);
+
+    $this->actingAs($reviewer)->getJson('/api/proposals?search=Stats+subject')
+        ->assertJsonPath('data.0.reviews_count', 2)
+        ->assertJsonPath('data.0.average_rating', 5.5)
         ->assertJsonMissingPath('data.0.reviews');
 });

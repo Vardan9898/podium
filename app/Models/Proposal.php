@@ -117,9 +117,12 @@ final class Proposal extends Model
     }
 
     /**
-     * Title search through Laravel Scout, so the engine is configuration (SCOUT_DRIVER).
-     * Scout only resolves matching ids; visibility, filters and pagination stay in SQL,
-     * which keeps results and counts correct for every engine.
+     * Title search. The engine is configuration (SCOUT_DRIVER).
+     *
+     * On the default "database" engine the match is inlined into the same statement as the
+     * visibility, tag and status filters, so totals and paging stay exact for any result size.
+     * A hosted engine (Meilisearch) can only return ids, so those are resolved first and then
+     * filtered in SQL; that path is capped at proposals.search.max_matches ids per query.
      *
      * @param  Builder<self>  $query
      */
@@ -132,11 +135,14 @@ final class Proposal extends Model
             return;
         }
 
-        // The database engine feeds the term straight into ILIKE; hosted engines take plain text.
-        $engineTerm = config('scout.driver') === 'database' ? LikePattern::escape($term) : $term;
+        if (config()->string('scout.driver') === 'database') {
+            $query->whereLike('title', LikePattern::contains($term));
+
+            return;
+        }
 
         $query->whereKey(
-            self::search($engineTerm)->take(config()->integer('proposals.search.max_matches'))->keys(),
+            self::search($term)->take(config()->integer('proposals.search.max_matches'))->keys(),
         );
     }
 

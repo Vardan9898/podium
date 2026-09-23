@@ -1,6 +1,6 @@
 import { messageOf, statusOf } from '@/api/http';
 import type { ValidationErrorBody } from '@/types/api';
-import { AxiosError } from 'axios';
+import axios from 'axios';
 import { reactive, ref, type Ref, type UnwrapRef } from 'vue';
 
 export type FieldErrors = Record<string, string>;
@@ -58,7 +58,7 @@ export function useForm<T extends object>(initial: T): Form<T> {
         try {
             return await request(data);
         } catch (error: unknown) {
-            if (statusOf(error) === 422 && error instanceof AxiosError) {
+            if (statusOf(error) === 422 && axios.isAxiosError(error)) {
                 const body = error.response?.data as ValidationErrorBody;
                 errors.value = mapValidationErrors(body.errors ?? {});
                 formError.value = Object.keys(errors.value).length === 0 ? body.message : null;

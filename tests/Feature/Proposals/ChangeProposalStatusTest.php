@@ -47,10 +47,21 @@ it('rejects unknown statuses', function (): void {
         ->assertJsonValidationErrors('status');
 });
 
-it('forbids users without the change-status permission', function (Role $role): void {
+it('forbids reviewers, who may see the proposal but not decide', function (): void {
     $proposal = Proposal::factory()->create();
 
-    $this->actingAs(userWithRole($role))
+    $this->actingAs(userWithRole(Role::Reviewer))
         ->patchJson("/api/proposals/{$proposal->id}/status", ['status' => ProposalStatus::Approved->value])
         ->assertForbidden();
-})->with([Role::Speaker, Role::Reviewer]);
+});
+
+it('hides other speakers\' proposals behind the same 404 as a missing one', function (): void {
+    $proposal = Proposal::factory()->create();
+    $speaker = userWithRole(Role::Speaker);
+    $payload = ['status' => ProposalStatus::Approved->value];
+
+    $foreign = $this->actingAs($speaker)->patchJson("/api/proposals/{$proposal->id}/status", $payload)->assertNotFound();
+    $missing = $this->actingAs($speaker)->patchJson('/api/proposals/999999/status', $payload)->assertNotFound();
+
+    expect($foreign->json())->toBe($missing->json())->toBe(['message' => 'Not found.']);
+});

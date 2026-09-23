@@ -19,6 +19,7 @@ final class ProposalStatusChanged implements ShouldDispatchAfterCommit
     public function __construct(
         public readonly Proposal $proposal,
         public readonly ProposalStatus $previous,
+        public readonly ProposalStatus $current,
         public readonly User $actor,
     ) {}
 }

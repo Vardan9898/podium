@@ -16,7 +16,7 @@ jobs:
 
         services:
             postgres:
-                image: postgres:17-alpine
+                image: postgres:18-alpine
                 env:
                     POSTGRES_DB: testing
                     POSTGRES_USER: sail
@@ -43,13 +43,20 @@ jobs:
               with:
                   path: vendor
                   key: composer-${{ hashFiles('composer.lock') }}
+                  restore-keys: composer-
 
+            - run: composer validate --strict
             - run: composer install --no-interaction --prefer-dist --no-progress
 
             - name: Prepare environment
               run: |
                   cp .env.example .env
                   php artisan key:generate
+
+            - name: Migrate and seed (the reviewer's first command)
+              run: php artisan migrate --seed --force
+              env:
+                  DB_DATABASE: testing
 
             - name: Pint
               run: vendor/bin/pint --test

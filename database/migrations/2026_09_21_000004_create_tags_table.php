@@ -13,7 +13,8 @@ return new class extends Migration
         Schema::create('tags', function (Blueprint $table): void {
             $table->id();
             $table->string('name', 30);
-            $table->string('normalized_name', 30)->unique();
+            // Case folding can lengthen a name (e.g. "İ" -> "i̇"), so the key column is wider than the name.
+            $table->string('normalized_name', 120)->unique();
             $table->timestamps();
         });
 

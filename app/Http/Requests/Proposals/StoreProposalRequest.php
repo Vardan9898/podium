@@ -5,18 +5,12 @@ declare(strict_types=1);
 namespace App\Http\Requests\Proposals;
 
 use App\Data\ProposalData;
-use App\Models\Proposal;
 use App\Models\Tag;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 final class StoreProposalRequest extends FormRequest
 {
-    public function authorize(): bool
-    {
-        return $this->user()?->can('create', Proposal::class) ?? false;
-    }
-
     /**
      * Validate tags in the form they will be stored, so length and uniqueness rules can't be
      * sidestepped with padding ("  a  ") or spacing variants ("Vue  JS" vs "Vue JS").

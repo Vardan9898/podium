@@ -16,6 +16,8 @@ async function signOut(): Promise<void> {
 
     try {
         await auth.logout();
+    } catch {
+        // The session is cleared locally either way; a failed call is not worth blocking on.
     } finally {
         signingOut.value = false;
     }

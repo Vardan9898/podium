@@ -208,7 +208,7 @@ onBeforeUnmount(() => {
                     :maxlength="LIMITS.tagMax"
                     class="min-w-32 flex-1 bg-transparent px-1.5 py-1 text-[15px] placeholder:text-ink-faint focus:outline-none"
                     :placeholder="isFull ? 'Tag limit reached' : placeholder"
-                    :disabled="isFull"
+                    :aria-disabled="isFull"
                     :aria-expanded="open && options.length > 0"
                     :aria-controls="listboxId"
                     :aria-activedescendant="activeIndex >= 0 ? optionId(activeIndex) : undefined"
@@ -242,6 +242,8 @@ onBeforeUnmount(() => {
             </ul>
         </div>
         <p v-if="error" :id="`${id}-help`" class="text-sm text-rejected">{{ error }}</p>
-        <p v-else-if="hint" :id="`${id}-help`" class="text-xs text-ink-faint">{{ hint }}</p>
+        <p v-else :id="`${id}-help`" class="text-xs text-ink-faint">
+            {{ isFull ? `You have reached the limit of ${max} tags. Remove one to add another.` : hint }}
+        </p>
     </div>
 </template>

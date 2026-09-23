@@ -63,3 +63,18 @@ it('indexes only the title', function (): void {
 
     expect($proposal->toSearchableArray())->toBe(['title' => 'Edge caching']);
 });
+
+it('never truncates or hides results on the default engine, whatever the cap says', function (): void {
+    config(['scout.driver' => 'database', 'proposals.search.max_matches' => 2]);
+    $speaker = userWithRole(Role::Speaker);
+    Proposal::factory()->count(5)->create(['title' => 'Laravel everywhere']);
+    $own = Proposal::factory()->for($speaker, 'author')->create(['title' => 'Laravel for beginners']);
+
+    $this->actingAs(userWithRole(Role::Reviewer))->getJson('/api/proposals?search=laravel')
+        ->assertJsonPath('meta.total', 6);
+
+    // The speaker's own match must never fall outside a cap spent on proposals they cannot see.
+    $this->actingAs($speaker)->getJson('/api/proposals?search=laravel')
+        ->assertJsonPath('meta.total', 1)
+        ->assertJsonPath('data.0.id', $own->id);
+});

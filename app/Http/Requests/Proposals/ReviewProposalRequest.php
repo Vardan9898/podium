@@ -10,11 +10,6 @@ use Illuminate\Foundation\Http\FormRequest;
 
 final class ReviewProposalRequest extends FormRequest
 {
-    public function authorize(): bool
-    {
-        return $this->user()?->can('review', $this->route('proposal')) ?? false;
-    }
-
     /** @return array<string, ValidationRule|array<mixed>|string> */
     public function rules(): array
     {

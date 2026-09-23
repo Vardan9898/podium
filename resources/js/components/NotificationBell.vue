@@ -9,20 +9,36 @@ const store = useNotificationStore();
 const router = useRouter();
 const open = ref(false);
 const root = ref<HTMLElement | null>(null);
+const trigger = ref<HTMLButtonElement | null>(null);
 const panelId = useId();
+const headingId = `${panelId}-heading`;
 
-function close(): void {
+function close({ restoreFocus = false } = {}): void {
     open.value = false;
+
+    if (restoreFocus) {
+        trigger.value?.focus();
+    }
 }
 
-async function openNotification(notification: AppNotification): Promise<void> {
+function onKeydown(event: KeyboardEvent): void {
+    if (event.key === 'Escape' && open.value) {
+        close({ restoreFocus: true });
+    }
+}
+
+function openNotification(notification: AppNotification): void {
     close();
 
     if (notification.read_at === null) {
-        void store.markRead([notification.id]);
+        store.markRead([notification.id]).catch(() => undefined); // the store restores state and warns
     }
 
-    await router.push({ name: 'proposals.show', params: { id: notification.data.proposal_id } });
+    void router.push({ name: 'proposals.show', params: { id: notification.data.proposal_id } });
+}
+
+function markAllRead(): void {
+    store.markRead().catch(() => undefined);
 }
 
 function onDocumentClick(event: MouseEvent): void {
@@ -31,13 +47,20 @@ function onDocumentClick(event: MouseEvent): void {
     }
 }
 
-onMounted(() => document.addEventListener('click', onDocumentClick));
-onBeforeUnmount(() => document.removeEventListener('click', onDocumentClick));
+onMounted(() => {
+    document.addEventListener('click', onDocumentClick);
+    document.addEventListener('keydown', onKeydown);
+});
+onBeforeUnmount(() => {
+    document.removeEventListener('click', onDocumentClick);
+    document.removeEventListener('keydown', onKeydown);
+});
 </script>
 
 <template>
-    <div ref="root" class="relative" @keydown.escape="close">
+    <div ref="root" class="relative">
         <button
+            ref="trigger"
             type="button"
             class="relative grid size-10 place-items-center rounded-full text-ink hover:bg-paper-deep"
             :aria-expanded="open"
@@ -62,11 +85,13 @@ onBeforeUnmount(() => document.removeEventListener('click', onDocumentClick));
             <div
                 v-if="open"
                 :id="panelId"
+                role="dialog"
+                :aria-labelledby="headingId"
                 class="fixed inset-x-3 top-16 z-40 overflow-hidden rounded-2xl border border-rule bg-card shadow-[0_24px_60px_-24px_rgb(27_26_23/0.45)] sm:absolute sm:inset-x-auto sm:top-12 sm:right-0 sm:w-96"
             >
                 <div class="flex items-center justify-between border-b border-rule px-4 py-3">
-                    <h2 class="font-display font-semibold">Notifications</h2>
-                    <button v-if="store.hasUnread" type="button" class="text-xs text-ink-soft hover:text-signal" @click="store.markRead()">Mark all read</button>
+                    <h2 :id="headingId" class="font-display font-semibold">Notifications</h2>
+                    <button v-if="store.hasUnread" type="button" class="text-xs text-ink-soft hover:text-signal" @click="markAllRead">Mark all read</button>
                 </div>
                 <ul v-if="store.items.length" class="max-h-[60vh] divide-y divide-rule overflow-auto">
                     <li v-for="notification in store.items" :key="notification.id">

@@ -30,7 +30,7 @@ final class NotifyAboutProposalStatusChange implements ShouldQueue
             ProposalActivityType::StatusChanged,
             $proposal,
             $event->actor,
-            "Status changed from {$event->previous->value} to {$proposal->status->value}.",
+            "Status changed from {$event->previous->value} to {$event->current->value}.",
         )));
     }
 }

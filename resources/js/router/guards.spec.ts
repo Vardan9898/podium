@@ -3,8 +3,8 @@ import { describe, expect, it, vi } from 'vitest';
 import type { RouteLocationNormalized } from 'vue-router';
 import { authGuard, HOME, safeRedirect, type AuthState } from './guards';
 
-function route(meta: RouteLocationNormalized['meta'], fullPath = '/somewhere'): RouteLocationNormalized {
-    return { meta, fullPath } as RouteLocationNormalized;
+function route(meta: RouteLocationNormalized['meta'], fullPath = '/somewhere', query: Record<string, string> = {}): RouteLocationNormalized {
+    return { meta, fullPath, query } as unknown as RouteLocationNormalized;
 }
 
 function auth(authenticated: boolean, permissions: Permission[] = []): AuthState {
@@ -32,6 +32,23 @@ describe('authGuard', () => {
 
     it('keeps signed-in users out of guest-only pages', async () => {
         expect(await authGuard(route({ guestOnly: true }), auth(true))).toEqual(HOME);
+    });
+
+    it('sends a signed-in user to a safe pending redirect, ignoring an unsafe one', async () => {
+        const guestOnly = { guestOnly: true };
+
+        expect(await authGuard(route(guestOnly, '/login', { redirect: '/proposals/12' }), auth(true))).toBe('/proposals/12');
+        expect(await authGuard(route(guestOnly, '/login', { redirect: 'https://evil.example.com' }), auth(true))).toEqual(HOME);
+    });
+
+    it('does not decide before the session has loaded', async () => {
+        let settled = false;
+        const state = { ...auth(false), ensureLoaded: () => new Promise<void>((resolve) => setTimeout(() => { settled = true; resolve(); }, 10)) };
+
+        const decision = authGuard(route({ requiresAuth: true }), state);
+        expect(settled).toBe(false);
+        await decision;
+        expect(settled).toBe(true);
     });
 
     it('redirects users lacking the route permission', async () => {

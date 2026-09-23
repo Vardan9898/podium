@@ -20,7 +20,8 @@ return [
     ],
 
     'search' => [
-        // Upper bound on ids a search engine may return for one query.
+        // Only used by hosted engines (Meilisearch), which resolve ids before SQL filtering.
+        // The default "database" engine matches inline and has no cap.
         'max_matches' => 1000,
     ],
 

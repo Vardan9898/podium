@@ -6,10 +6,10 @@ Speakers submit talk proposals, reviewers rate them, admins decide — and every
 
 | | |
 |---|---|
-| Backend checks | Pint · Larastan level 8 · **168 Pest tests** (incl. a 56-case authorization matrix) |
-| Frontend checks | `vue-tsc` strict · **36 Vitest specs** · production build |
+| Backend checks | Pint · Larastan level 8 · **186 Pest tests** (incl. a 56-case authorization matrix) |
+| Frontend checks | `vue-tsc` strict · **53 Vitest specs** · production build |
 | API docs | OpenAPI 3.1 generated from code at **`/docs/api`** |
-| CI | GitHub Actions runs all of the above on every push |
+| CI | GitHub Actions runs all of the above, plus `migrate --seed`, on pull requests and pushes to `main` |
 
 ---
 
@@ -185,7 +185,7 @@ resources/js/
   types/api.ts     mirrors of API Resources and enums
 tests/
   Feature/         auth, authorization matrix, proposals, reviews, status, notifications, broadcasting
-  Unit/            tag normalisation, every Action
+  Unit/            tag normalisation, every Action (database-backed)
 ```
 
 ## Security
@@ -224,7 +224,7 @@ What's covered:
 - **Config**: `/api/config` reflects server config.
 - **Search**: Scout title search with the `database` and `collection` engines, filters and pagination counts unchanged, wildcards literal, only the title indexed.
 - **Notifications**: exact recipients per event with the actor excluded, reviewer anonymity towards authors, no notifications for no-op edits, payload shape, private channel name, list / mark-read endpoints, channel authorisation.
-- **Unit**: tag normalisation and every Action (incl. file cleanup when the transaction fails).
+- **Unit**: tag normalisation and every Action (incl. file cleanup when the transaction fails). These touch the database on purpose — they exercise each Action against real Postgres behaviour (unique indexes, locking) rather than mocks.
 - **Vitest**: `useForm` 422 mapping, `TagInput` behaviour, router guard redirects + open-redirect protection, URL query parsing, auth store session loading/retry, toast lifecycle.
 
 ## API
@@ -247,13 +247,13 @@ Interactive docs: **`/docs/api`** (Scramble; enabled when `APP_ENV=local`). Requ
 | GET | `/api/tags?search=` | signed in (autocomplete, max 20) |
 | GET | `/api/notifications` | signed in (+ `unread_count`) |
 | POST | `/api/notifications/read` | signed in (`ids` optional → all) |
-| POST | `/api/broadcasting/auth` | signed in (own private channel only) |
+| POST | `/api/broadcasting/auth` | signed in (own private channel only; Laravel also registers GET) |
 
 Errors: Laravel's standard `422 {message, errors}`; `401`, `403`, `404`, `419`, `429` always return JSON `{message}` for API requests.
 
 ## Switching search to Meilisearch
 
-Title search goes through Laravel Scout. Scout only resolves *which ids match*; visibility, tag/status filters and pagination stay in SQL, so results and page counts are identical on every engine (tested against both an in-database and an in-memory engine).
+Title search goes through Laravel Scout. On the default `database` engine the match is inlined into the same statement as the visibility, tag and status filters, so results and page counts are exact whatever the result size. A hosted engine can only resolve ids, so those are fetched first (capped at `proposals.search.max_matches`) and filtered in SQL. Both paths are tested.
 
 ```bash
 # .env
@@ -291,7 +291,7 @@ composer dev        # server + queue worker + Reverb + Vite
 
 ## Trade-offs & what I'd do next
 
-- **Search engine choice.** The default Scout `database` engine is `ILIKE` on the title, which is right for this data size; a `pg_trgm` GIN index would be the next step before reaching for Meilisearch. With a hosted engine the list asks it for at most 1,000 matching ids (`config/proposals.php`) and then filters in SQL — simple and exact, but for very large result sets I'd push the filters into the engine as filterable attributes.
+- **Search engine choice.** On the default `database` engine the title match is inlined into the same SQL as the filters, so totals and paging are exact at any size; a `pg_trgm` GIN index would be the next step before reaching for Meilisearch. A hosted engine can only return ids, so that path asks for at most 1,000 (`config/proposals.search.max_matches`) and filters them in SQL — beyond that I'd push visibility and filters into the engine as filterable attributes.
 - **Tag identity** is a case-folded `normalized_name` with a unique index; creation is race-safe (`insertOrIgnore` + re-select). Unicode-aware accent folding (`Café` = `Cafe`) would need ICU collation and wasn't worth the complexity here.
 - **Field length limits** (title 255, etc.) are mirrored in `resources/js/lib/config.ts` for counters only; everything *configurable* comes from `/api/config`.
 - **Notifications fan out one queued job per recipient per channel.** Fine here; for thousands of reviewers I'd chunk recipients inside the (already queued) listener.

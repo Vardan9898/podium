@@ -127,6 +127,6 @@ return [
     |
     */
 
-    'allow_admin_registration' => (bool) env('ALLOW_ADMIN_REGISTRATION', true),
+    'allow_admin_registration' => (bool) env('ALLOW_ADMIN_REGISTRATION', false),
 
 ];

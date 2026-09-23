@@ -36,7 +36,7 @@ async function load({ quiet = false } = {}): Promise<void> {
     controller?.abort();
     controller = new AbortController();
     const { signal } = controller;
-    loading.value = !quiet;
+    loading.value = !quiet || proposal.value === null;
     error.value = null;
 
     try {

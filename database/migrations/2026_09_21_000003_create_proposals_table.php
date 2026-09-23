@@ -21,7 +21,11 @@ return new class extends Migration
             $table->string('attachment_original_name')->nullable();
             $table->timestamps();
 
-            $table->index(['user_id', 'created_at']);
+            // The list is always ordered by created_at desc, id desc, optionally filtered by
+            // status (everyone) or author (speakers). Postgres can scan these backwards.
+            $table->index(['created_at', 'id']);
+            $table->index(['status', 'created_at', 'id']);
+            $table->index(['user_id', 'created_at', 'id']);
         });
     }
 

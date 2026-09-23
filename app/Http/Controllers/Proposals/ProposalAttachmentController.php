@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Proposals;
 use App\Http\Controllers\Controller;
 use App\Models\Proposal;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 final class ProposalAttachmentController extends Controller
@@ -23,6 +24,9 @@ final class ProposalAttachmentController extends Controller
 
         abort_unless($proposal->hasAttachment() && $disk->exists($path), 404);
 
-        return $disk->download($path, $proposal->attachment_original_name);
+        // Guard older rows: an ASCII-empty name would make Content-Disposition throw.
+        $name = (string) $proposal->attachment_original_name;
+
+        return $disk->download($path, Str::ascii($name) === '' ? "proposal-{$proposal->id}.pdf" : $name);
     }
 }

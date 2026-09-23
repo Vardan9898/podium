@@ -36,14 +36,14 @@ final class ProposalPolicy
         return $user->can(Permission::CreateProposals);
     }
 
-    public function review(User $user, Proposal $proposal): bool
+    public function review(User $user, Proposal $proposal): Response
     {
-        return $user->can(Permission::ReviewProposals) && $this->view($user, $proposal)->allowed();
+        return $this->decide($user, $proposal, Permission::ReviewProposals);
     }
 
-    public function changeStatus(User $user, Proposal $proposal): bool
+    public function changeStatus(User $user, Proposal $proposal): Response
     {
-        return $user->can(Permission::ChangeProposalStatus) && $this->view($user, $proposal)->allowed();
+        return $this->decide($user, $proposal, Permission::ChangeProposalStatus);
     }
 
     public function viewReviews(User $user, Proposal $proposal): bool
@@ -54,5 +54,18 @@ final class ProposalPolicy
     public function downloadAttachment(User $user, Proposal $proposal): Response
     {
         return $this->view($user, $proposal);
+    }
+
+    /**
+     * Invisible proposals are denied as 404 so no endpoint reveals which ids exist;
+     * a visible proposal the user simply may not act on is a plain 403.
+     */
+    private function decide(User $user, Proposal $proposal, Permission $permission): Response
+    {
+        if ($this->view($user, $proposal)->denied()) {
+            return Response::denyAsNotFound();
+        }
+
+        return $user->can($permission) ? Response::allow() : Response::deny();
     }
 }

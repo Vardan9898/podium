@@ -20,6 +20,9 @@ return new class extends Migration
             $table->text('data');
             $table->timestamp('read_at')->nullable();
             $table->timestamps();
+
+            // The bell lists a user's notifications newest first.
+            $table->index(['notifiable_type', 'notifiable_id', 'created_at']);
         });
     }
 

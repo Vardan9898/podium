@@ -10,7 +10,7 @@ const percent = computed(() => ((props.average ?? 0) / max.value) * 100);
 </script>
 
 <template>
-    <div class="flex items-center gap-3" :aria-label="average == null ? 'No reviews yet' : `Average rating ${average} out of ${max} from ${count} reviews`">
+    <div role="img" class="flex items-center gap-3" :aria-label="average == null ? 'No reviews yet' : `Average rating ${average} out of ${max} from ${count} reviews`">
         <template v-if="average != null">
             <span class="font-display text-lg leading-none font-semibold tabular-nums">{{ average.toFixed(1) }}</span>
             <span class="relative h-1.5 w-16 overflow-hidden rounded-full bg-paper-deep" aria-hidden="true">

@@ -35,7 +35,8 @@ return [
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app/private'),
-            'serve' => true,
+            // Attachments are only reachable through the policy-protected download endpoint.
+            'serve' => false,
             'throw' => false,
             'report' => false,
         ],

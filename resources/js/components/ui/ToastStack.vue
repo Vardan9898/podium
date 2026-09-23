@@ -8,7 +8,7 @@ const accent = { info: 'bg-signal', success: 'bg-approved', error: 'bg-rejected'
 </script>
 
 <template>
-    <div class="pointer-events-none fixed inset-x-4 bottom-4 z-50 flex flex-col items-end gap-2 sm:inset-x-auto sm:right-6 sm:bottom-6" aria-live="polite">
+    <div class="pointer-events-none fixed inset-x-4 bottom-4 z-50 flex flex-col items-end gap-2 sm:inset-x-auto sm:right-6 sm:bottom-6">
         <TransitionGroup
             enter-from-class="translate-y-2 opacity-0"
             leave-to-class="translate-x-4 opacity-0"
@@ -33,7 +33,7 @@ const accent = { info: 'bg-signal', success: 'bg-approved', error: 'bg-rejected'
                     <p v-else class="truncate font-medium">{{ toast.title }}</p>
                     <p v-if="toast.body" class="mt-0.5 text-sm text-card/70">{{ toast.body }}</p>
                 </div>
-                <button class="px-3 text-card/60 hover:text-card" @click="store.dismiss(toast.id)">
+                <button type="button" class="px-3 text-card/60 hover:text-card" @click="store.dismiss(toast.id)">
                     <span aria-hidden="true">✕</span><span class="sr-only">Dismiss</span>
                 </button>
             </div>

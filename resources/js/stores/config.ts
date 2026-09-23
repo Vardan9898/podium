@@ -15,14 +15,16 @@ export const useConfigStore = defineStore('config', () => {
     const settings = ref<ClientConfig>(DEFAULTS);
     let loading: Promise<void> | null = null;
 
+    /**
+     * Awaited once by the router guard. A failure falls back to the defaults above and is not
+     * retried per navigation, so a broken endpoint can never stall routing.
+     */
     function ensureLoaded(): Promise<void> {
         loading ??= fetchClientConfig()
             .then((config) => {
                 settings.value = config;
             })
-            .catch(() => {
-                loading = null; // retry on the next navigation
-            });
+            .catch(() => undefined);
 
         return loading;
     }

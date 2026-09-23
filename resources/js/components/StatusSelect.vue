@@ -4,7 +4,7 @@ import { changeStatus } from '@/api/proposals';
 import { STATUS_OPTIONS } from '@/lib/format';
 import { useToastStore } from '@/stores/toasts';
 import type { Proposal, ProposalStatus } from '@/types/api';
-import { ref, useId } from 'vue';
+import { ref, useId, watch } from 'vue';
 
 const props = defineProps<{ proposal: Proposal }>();
 const emit = defineEmits<{ changed: [status: ProposalStatus] }>();
@@ -12,6 +12,10 @@ const emit = defineEmits<{ changed: [status: ProposalStatus] }>();
 const toasts = useToastStore();
 const saving = ref<ProposalStatus | null>(null);
 const name = useId();
+// Controlled selection: the radios must never keep a state the server rejected.
+const selected = ref<ProposalStatus>(props.proposal.status);
+
+watch(() => props.proposal.status, (status) => (selected.value = status));
 
 async function select(status: ProposalStatus): Promise<void> {
     if (status === props.proposal.status || saving.value) {
@@ -19,12 +23,14 @@ async function select(status: ProposalStatus): Promise<void> {
     }
 
     saving.value = status;
+    selected.value = status;
 
     try {
         const updated = await changeStatus(props.proposal.id, status);
         emit('changed', updated.status);
         toasts.push({ title: `Marked as ${status}`, tone: 'success' });
     } catch (error: unknown) {
+        selected.value = props.proposal.status;
         toasts.push({ title: 'Status not changed', body: messageOf(error), tone: 'error' });
     } finally {
         saving.value = null;
@@ -38,11 +44,11 @@ async function select(status: ProposalStatus): Promise<void> {
         <legend class="sr-only">Proposal status</legend>
         <label v-for="option in STATUS_OPTIONS" :key="option.value" class="relative">
             <input
+                v-model="selected"
                 type="radio"
                 class="peer sr-only"
                 :name="name"
                 :value="option.value"
-                :checked="proposal.status === option.value"
                 @change="select(option.value)"
             />
             <span

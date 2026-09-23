@@ -18,10 +18,16 @@ final class ReviewProposal
      */
     public function handle(User $reviewer, Proposal $proposal, ReviewData $data): Review
     {
-        $review = $proposal->reviews()->updateOrCreate(
+        // createOrFirst survives two concurrent submissions from the same reviewer: the loser of
+        // the unique-index race re-reads the winner's row instead of erroring.
+        $review = $proposal->reviews()->createOrFirst(
             ['user_id' => $reviewer->id],
             ['rating' => $data->rating, 'comment' => $data->comment],
         );
+
+        if (! $review->wasRecentlyCreated) {
+            $review->fill(['rating' => $data->rating, 'comment' => $data->comment])->save();
+        }
 
         if ($review->wasRecentlyCreated || $review->wasChanged()) {
             ProposalReviewed::dispatch($proposal, $review, $reviewer, $review->wasRecentlyCreated);

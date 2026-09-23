@@ -7,15 +7,16 @@ import { LIMITS } from '@/lib/config';
 import { useConfigStore } from '@/stores/config';
 import { useToastStore } from '@/stores/toasts';
 import type { Review } from '@/types/api';
-import { useId } from 'vue';
+import { computed, useId } from 'vue';
 
 const props = defineProps<{ proposalId: number; existing: Review | null }>();
 const emit = defineEmits<{ saved: [review: Review] }>();
 
 const toasts = useToastStore();
 const form = useForm({ rating: (props.existing?.rating ?? null) as number | null, comment: props.existing?.comment ?? '' });
-const { min, max } = useConfigStore().settings.rating;
-const scale = Array.from({ length: max - min + 1 }, (_, i) => min + i);
+const config = useConfigStore();
+const rating = computed(() => config.settings.rating);
+const scale = computed(() => Array.from({ length: rating.value.max - rating.value.min + 1 }, (_, i) => rating.value.min + i));
 const groupId = useId();
 
 async function submit(): Promise<void> {
@@ -31,7 +32,7 @@ async function submit(): Promise<void> {
 <template>
     <form class="space-y-5" novalidate @submit.prevent="submit">
         <fieldset :aria-describedby="form.errors.value.rating ? `${groupId}-error` : undefined">
-            <legend class="text-sm font-medium">Rating <span class="text-ink-faint">({{ min }}–{{ max }})</span></legend>
+            <legend class="text-sm font-medium">Rating <span class="text-ink-faint">({{ rating.min }}–{{ rating.max }})</span></legend>
             <div class="mt-2 grid grid-cols-5 gap-1.5 sm:grid-cols-10">
                 <label v-for="value in scale" :key="value" class="relative">
                     <input v-model="form.data.rating" type="radio" :name="groupId" :value="value" class="peer sr-only" @change="form.clearError('rating')" />

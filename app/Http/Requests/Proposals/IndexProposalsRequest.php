@@ -32,8 +32,10 @@ final class IndexProposalsRequest extends FormRequest
         $names = $this->array('tags');
         $keys = array_values(array_unique(array_map(Tag::keyFor(...), $names)));
 
+        $search = $this->string('search')->trim()->value();
+
         return new ProposalFilters(
-            search: $this->string('search')->value() ?: null,
+            search: $search === '' ? null : $search,
             tags: $keys,
             status: $this->enum('status', ProposalStatus::class),
             perPage: $this->integer('per_page', config()->integer('proposals.pagination.per_page')),

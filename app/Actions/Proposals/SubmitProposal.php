@@ -10,8 +10,10 @@ use App\Events\ProposalSubmitted;
 use App\Models\Proposal;
 use App\Models\User;
 use Illuminate\Contracts\Filesystem\Filesystem;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use RuntimeException;
 use Throwable;
 
@@ -44,6 +46,17 @@ final class SubmitProposal
     }
 
     /**
+     * Keeps the client-supplied name usable as a download filename: bounded in length and
+     * never empty once reduced to ASCII (Content-Disposition needs an ASCII fallback).
+     */
+    private static function safeFileName(UploadedFile $file): string
+    {
+        $name = Str::limit(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME), 200, '');
+
+        return Str::ascii($name) === '' ? 'proposal.pdf' : "{$name}.pdf";
+    }
+
+    /**
      * The file is written inside the transaction; if any later step throws, the row is rolled
      * back and the file removed, so neither is left without the other.
      */
@@ -58,7 +71,7 @@ final class SubmitProposal
 
                 $proposal->update([
                     'attachment_path' => $storedPath,
-                    'attachment_original_name' => $data->attachment->getClientOriginalName(),
+                    'attachment_original_name' => self::safeFileName($data->attachment),
                 ]);
             }
 

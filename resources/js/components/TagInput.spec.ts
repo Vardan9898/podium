@@ -101,10 +101,32 @@ describe('TagInput', () => {
         expect(model.value).toEqual(['A1']);
     });
 
-    it('respects the maximum number of tags', async () => {
+    it('refuses to go past the maximum, however the tag is entered', async () => {
         const { wrapper, model } = mountInput({ max: 2, modelValue: ['A1', 'B2'] });
         model.value = ['A1', 'B2'];
 
-        expect(wrapper.find('input').attributes('disabled')).toBeDefined();
+        await type(wrapper, 'Third tag');
+        await wrapper.find('input').trigger('keydown', { key: 'Enter' });
+        expect(model.value).toEqual(['A1', 'B2']);
+
+        await type(wrapper, 'fourth, fifth,');
+        await nextTick();
+        expect(model.value).toEqual(['A1', 'B2']);
+
+        // The input stays focusable so the user can still remove a chip with Backspace.
+        expect(wrapper.find('input').attributes('disabled')).toBeUndefined();
+        expect(wrapper.find('input').attributes('aria-disabled')).toBe('true');
+    });
+
+    it('adds every tag from pasted text', async () => {
+        const { wrapper, model } = mountInput();
+        const input = wrapper.find('input');
+
+        // jsdom has no clipboard payload: a paste lands in the field as an input event.
+        await input.trigger('paste');
+        await type(wrapper, 'php, vue, testing,');
+        await nextTick();
+
+        expect(model.value).toEqual(['php', 'vue', 'testing']);
     });
 });

@@ -5,7 +5,7 @@ import { LIMITS } from '@/lib/config';
 import { STATUS_OPTIONS } from '@/lib/format';
 import { useConfigStore } from '@/stores/config';
 import type { ProposalStatus } from '@/types/api';
-import { onBeforeUnmount, ref, useId, watch } from 'vue';
+import { computed, onBeforeUnmount, ref, useId, watch } from 'vue';
 
 export interface Filters {
     search: string;
@@ -18,13 +18,20 @@ const SEARCH_DEBOUNCE_MS = 300;
 const filters = defineModel<Filters>({ required: true });
 
 const searchId = useId();
-const maxTags = useConfigStore().settings.tags_max_per_proposal;
+const config = useConfigStore();
+const maxTags = computed(() => config.settings.tags_max_per_proposal);
 const search = ref(filters.value.search);
 let timer: ReturnType<typeof setTimeout> | undefined;
 
 // Typing is debounced; tags and status apply immediately.
 watch(search, (value) => {
     clearTimeout(timer);
+
+    // Nothing to publish when the box already agrees with the URL (e.g. after Back).
+    if (value === filters.value.search) {
+        return;
+    }
+
     timer = setTimeout(() => (filters.value = { ...filters.value, search: value }), SEARCH_DEBOUNCE_MS);
 });
 
@@ -33,6 +40,7 @@ watch(
     () => filters.value.search,
     (value) => {
         if (value !== search.value) {
+            clearTimeout(timer); // an in-flight debounce would publish the stale term back
             search.value = value;
         }
     },

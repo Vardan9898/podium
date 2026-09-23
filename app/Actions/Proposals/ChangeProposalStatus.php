@@ -28,7 +28,7 @@ final class ChangeProposalStatus
 
             $locked->update(['status' => $status]);
 
-            ProposalStatusChanged::dispatch($locked, $previous, $actor);
+            ProposalStatusChanged::dispatch($locked, $previous, $status, $actor);
 
             return $locked;
         });

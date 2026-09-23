@@ -11,11 +11,6 @@ use Illuminate\Validation\Rule;
 
 final class ChangeProposalStatusRequest extends FormRequest
 {
-    public function authorize(): bool
-    {
-        return $this->user()?->can('changeStatus', $this->route('proposal')) ?? false;
-    }
-
     /** @return array<string, ValidationRule|array<mixed>|string> */
     public function rules(): array
     {

@@ -42,7 +42,8 @@ async function load({ quiet = false } = {}): Promise<void> {
     controller = new AbortController();
     const { signal } = controller;
 
-    loading.value = !quiet;
+    // A quiet refresh keeps the skeleton up if there is nothing to show yet.
+    loading.value = !quiet || result.value === null;
     error.value = null;
 
     try {
@@ -60,7 +61,15 @@ async function load({ quiet = false } = {}): Promise<void> {
 
 watch(state, () => load(), { immediate: true });
 // Live updates: refresh silently when anything happens to a proposal.
-watch(() => notifications.lastActivity, () => load({ quiet: true }));
+// Guarded: resetting the store on sign-out also changes lastActivity (to null).
+watch(
+    () => notifications.lastActivity,
+    (activity) => {
+        if (activity) {
+            void load({ quiet: true });
+        }
+    },
+);
 onBeforeUnmount(() => controller?.abort());
 </script>
 
@@ -77,7 +86,7 @@ onBeforeUnmount(() => controller?.abort());
         <ProposalFilters v-model="filters" />
 
         <div v-if="loading" class="space-y-px overflow-hidden rounded-2xl border border-rule bg-card" aria-busy="true" aria-label="Loading proposals">
-            <div v-for="n in 5" :key="n" class="animate-pulse space-y-3 px-6 py-6">
+            <div v-for="n in 5" :key="n" role="status" class="animate-pulse space-y-3 px-6 py-6">
                 <div class="h-3 w-16 rounded bg-paper-deep" />
                 <div class="h-5 w-2/3 rounded bg-paper-deep" />
                 <div class="h-3 w-1/2 rounded bg-paper-deep/70" />

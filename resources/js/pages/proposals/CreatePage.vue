@@ -8,12 +8,13 @@ import { useForm } from '@/composables/useForm';
 import { LIMITS } from '@/lib/config';
 import { useConfigStore } from '@/stores/config';
 import { useToastStore } from '@/stores/toasts';
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { RouterLink, useRouter } from 'vue-router';
 
 const router = useRouter();
 const toasts = useToastStore();
-const maxTags = useConfigStore().settings.tags_max_per_proposal;
+const config = useConfigStore();
+const maxTags = computed(() => config.settings.tags_max_per_proposal);
 const progress = ref<number | null>(null);
 
 const form = useForm({ title: '', description: '', tags: [] as string[], attachment: null as File | null });

@@ -11,6 +11,12 @@ let instance: Echo<'reverb'> | null = null;
  * Lazily connects to Reverb. Channel auth goes through the shared axios client so the
  * Sanctum session cookie and XSRF header are sent exactly like every other API call.
  */
+/** Closes the socket after sign-out so no authenticated connection lingers in the tab. */
+export function disconnectEcho(): void {
+    instance?.disconnect();
+    instance = null;
+}
+
 export function echo(): Echo<'reverb'> {
     if (instance) {
         return instance;

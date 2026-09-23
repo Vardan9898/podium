@@ -1,4 +1,4 @@
-import axios, { AxiosError, type InternalAxiosRequestConfig } from 'axios';
+import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios';
 
 type RetriableConfig = InternalAxiosRequestConfig & { _csrfRetried?: boolean };
 
@@ -27,8 +27,10 @@ export function setUnauthorizedHandler(handler: () => void): void {
     onUnauthorized = handler;
 }
 
+// axios.isAxiosError (not instanceof) so the check still holds if a second copy of axios
+// is ever loaded — instanceof compares classes, and each copy brings its own.
 http.interceptors.response.use(undefined, async (error: unknown) => {
-    if (!(error instanceof AxiosError) || !error.response || !error.config) {
+    if (!axios.isAxiosError(error) || !error.response || !error.config) {
         throw error;
     }
 
@@ -54,11 +56,11 @@ export function isAbort(error: unknown): boolean {
 }
 
 export function statusOf(error: unknown): number | null {
-    return error instanceof AxiosError ? (error.response?.status ?? null) : null;
+    return axios.isAxiosError(error) ? (error.response?.status ?? null) : null;
 }
 
 export function messageOf(error: unknown, fallback = 'Something went wrong. Please try again.'): string {
-    if (error instanceof AxiosError) {
+    if (axios.isAxiosError(error)) {
         const message = (error.response?.data as { message?: unknown } | undefined)?.message;
 
         if (typeof message === 'string' && message !== '') {
