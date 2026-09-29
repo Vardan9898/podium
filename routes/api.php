@@ -18,7 +18,8 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('config', ClientConfigController::class)->name('config');
 
-Route::middleware('guest')->group(function (): void {
+// These three read or write the session, so they require a first-party (stateful) request.
+Route::middleware(['stateful', 'guest'])->group(function (): void {
     Route::post('register', RegisterController::class)->middleware('throttle:register')->name('register');
     Route::post('login', [SessionController::class, 'store'])->middleware('throttle:login')->name('login');
 });
@@ -27,7 +28,7 @@ Route::middleware('guest')->group(function (): void {
 Route::pattern('proposal', '[0-9]+');
 
 Route::middleware('auth:sanctum')->group(function (): void {
-    Route::post('logout', [SessionController::class, 'destroy'])->name('logout');
+    Route::post('logout', [SessionController::class, 'destroy'])->middleware('stateful')->name('logout');
     Route::get('me', CurrentUserController::class)->name('me');
 
     Route::get('proposals/summary', ProposalSummaryController::class)

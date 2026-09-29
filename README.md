@@ -308,6 +308,20 @@ composer setup      # install, key, migrate --seed, npm install, build
 composer dev        # server + queue worker + Reverb + Vite
 ```
 
+### Troubleshooting
+
+**`400` with "This API signs in with first-party session cookies"** — the request's `Origin`/`Referer`
+is not a trusted host, so Sanctum started no session. This is expected for curl/Postman: sign-in is
+cookie-based. Either drive it from the SPA, or add your host to `SANCTUM_STATEFUL_DOMAINS` (and call
+`GET /sanctum/csrf-cookie` first, sending the `XSRF-TOKEN` cookie back as the `X-XSRF-TOKEN` header).
+
+**Sign-in fails when you open the app on a custom host** (Valet/nginx, e.g. `http://podium.test`) —
+set `APP_URL` to exactly the URL you open, or list the host in `SANCTUM_STATEFUL_DOMAINS`. Trusted by
+default: `localhost`, `localhost:3000`, `localhost:8000`, `localhost:5173`, `127.0.0.1`,
+`127.0.0.1:8000`, `::1` and `APP_URL`.
+
+**Changes to `.env` seem ignored** — run `php artisan config:clear` (cached config wins over `.env`).
+
 ## Deploying
 
 The app is a standard Laravel deployment plus two long-running processes. On a fresh host:

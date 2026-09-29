@@ -22,7 +22,9 @@ return [
 
     'stateful' => explode(',', env('SANCTUM_STATEFUL_DOMAINS', sprintf(
         '%s%s',
-        'localhost,localhost:3000,127.0.0.1,127.0.0.1:8000,::1',
+        // localhost:8000 added to Laravel's defaults: it is where `php artisan serve` listens,
+        // and without it sign-in fails for anyone whose APP_URL points elsewhere.
+        'localhost,localhost:3000,localhost:8000,localhost:5173,127.0.0.1,127.0.0.1:8000,::1',
         Sanctum::currentApplicationUrlWithPort(),
         // Sanctum::currentRequestHost(),
     ))),
