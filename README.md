@@ -320,7 +320,16 @@ set `APP_URL` to exactly the URL you open, or list the host in `SANCTUM_STATEFUL
 default: `localhost`, `localhost:3000`, `localhost:8000`, `localhost:5173`, `127.0.0.1`,
 `127.0.0.1:8000`, `::1` and `APP_URL`.
 
+**Live notifications never arrive, though the WebSocket connects** — nothing is consuming the
+queue. Notifications are queued on purpose (a broker problem must never roll back a write), so a
+worker has to be running: `php artisan queue:work redis`, or just use `composer dev`, which starts
+the server, worker, Reverb and Vite together. Sail starts one for you. To check for a backlog:
+`redis-cli llen podium-database-queues:default` — a number above 0 with nothing draining it means
+no worker. The bell and `/api/notifications` fill in as soon as one runs.
+
 **Changes to `.env` seem ignored** — run `php artisan config:clear` (cached config wins over `.env`).
+A cached config also overrides `phpunit.xml`, which would point the suite at your development
+database; the suite refuses to run in that case and tells you to clear it.
 
 ## Deploying
 

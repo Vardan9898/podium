@@ -153,6 +153,10 @@ return [
             'cluster' => env('REDIS_CLUSTER', 'redis'),
             'prefix' => env('REDIS_PREFIX', Str::slug((string) env('APP_NAME', 'laravel')).'-database-'),
             'persistent' => env('REDIS_PERSISTENT', false),
+            // A queue worker blocks on BRPOP between jobs. With predis the default 60s
+            // read timeout then kills the worker ("Stream is already at the end") and queued
+            // notifications stop being delivered until someone restarts it. 0 = wait forever.
+            'read_write_timeout' => env('REDIS_READ_WRITE_TIMEOUT', 0),
         ],
 
         'default' => [
